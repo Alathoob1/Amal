@@ -3,104 +3,774 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Aura</title>
+    <title>لوحة تحكم الإدارة — Aura</title>
+    <meta name="description" content="لوحة تحكم النظام الكاملة لمنصة Aura — إدارة المستخدمين والأطباء وسجلات التدقيق">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --admin-sidebar-w: 260px;
+            --role-admin:  #6366F1;
+            --role-doctor: #759A72;
+            --role-user:   #90B4F2;
+            --role-admin-bg:  rgba(99,102,241,0.1);
+            --role-doctor-bg: rgba(117,154,114,0.12);
+            --role-user-bg:   rgba(144,180,242,0.12);
+        }
+
+        .admin-layout {
+            display: grid;
+            grid-template-columns: var(--admin-sidebar-w) 1fr;
+            gap: 0;
+            min-height: calc(100vh - 65px);
+        }
+
+        .admin-sidebar {
+            background: rgba(255,255,255,0.82);
+            backdrop-filter: blur(14px);
+            border-inline-end: 1px solid var(--glass-border);
+            padding: 28px 16px;
+            position: sticky;
+            top: 65px;
+            height: calc(100vh - 65px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            padding: 0 12px;
+            margin: 20px 0 8px;
+        }
+        .sidebar-section-label:first-child { margin-top: 0; }
+
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: 2px; }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--border-radius-sm);
+            text-decoration: none;
+            color: var(--color-text-muted);
+            font-weight: 500;
+            font-size: 0.92rem;
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .sidebar-nav a .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+        .sidebar-nav a:hover   { background: rgba(117,154,114,0.08); color: var(--color-primary-hover); }
+        .sidebar-nav a.active  { background: rgba(117,154,114,0.15); color: var(--color-primary-hover); font-weight: 600; }
+
+        .admin-main { padding: 32px 36px; overflow-y: auto; }
+
+        .admin-section { display: none; }
+        .admin-section.visible { display: block; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .section-title { font-size: 1.5rem; font-weight: 700; color: var(--color-text-main); }
+        .section-subtitle { font-size: 0.88rem; color: var(--color-text-muted); margin-top: 4px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 22px 20px;
+            box-shadow: var(--shadow-premium);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 60%, rgba(255,255,255,0.4));
+            pointer-events: none;
+        }
+        .stat-icon { font-size: 1.6rem; margin-bottom: 12px; display: block; }
+        .stat-label { font-size: 0.8rem; color: var(--color-text-muted); font-weight: 500; margin-bottom: 6px; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--color-text-main); line-height: 1; }
+        .stat-card.primary .stat-value { color: var(--color-primary); }
+        .stat-card.accent  .stat-value { color: var(--role-admin); }
+        .stat-card.blue    .stat-value { color: var(--role-user); }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+        .search-icon {
+            position: absolute;
+            inset-inline-end: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-muted);
+            pointer-events: none;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: var(--border-radius-sm);
+            font-family: inherit;
+            font-size: 0.92rem;
+            background: rgba(255,255,255,0.85);
+            transition: all 0.3s;
+            color: var(--color-text-main);
+        }
+        .search-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(117,154,114,0.12); }
+
+        .filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 7px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.7);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            color: var(--color-text-muted);
+            transition: all 0.25s;
+        }
+        .filter-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+        .filter-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); box-shadow: 0 3px 10px rgba(117,154,114,0.3); }
+
+        .table-card {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-premium);
+            overflow: hidden;
+        }
+        .table-wrap { overflow-x: auto; }
+        table.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .admin-table thead th {
+            padding: 14px 16px;
+            text-align: start;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            background: rgba(0,0,0,0.02);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .admin-table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.2s; }
+        .admin-table tbody tr:last-child { border-bottom: none; }
+        .admin-table tbody tr:hover { background: rgba(117,154,114,0.04); }
+        .admin-table td { padding: 14px 16px; color: var(--color-text-main); vertical-align: middle; }
+
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .role-badge.admin  { background: var(--role-admin-bg);  color: var(--role-admin); }
+        .role-badge.doctor { background: var(--role-doctor-bg); color: var(--color-primary-hover); }
+        .role-badge.user   { background: var(--role-user-bg);   color: #3B7DD8; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .status-badge.success { background: rgba(117,154,114,0.12); color: var(--color-primary-hover); }
+        .status-badge.warning { background: rgba(226,125,96,0.12);  color: #C0613D; }
+        .status-badge.error   { background: rgba(239,68,68,0.1);    color: #DC2626; }
+
+        .user-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.78rem; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+        .avatar-admin  { background: linear-gradient(135deg,#6366F1,#818CF8); }
+        .avatar-doctor { background: linear-gradient(135deg,#759A72,#A8C5A5); }
+        .avatar-user   { background: linear-gradient(135deg,#90B4F2,#6090D8); }
+
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-name  { font-weight: 500; }
+        .user-email { font-size: 0.8rem; color: var(--color-text-muted); }
+
+        .btn-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(226,125,96,0.3);
+            background: rgba(226,125,96,0.05);
+            color: #E27D60;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            transition: all 0.25s;
+        }
+        .btn-icon:hover { background: rgba(226,125,96,0.12); border-color: #E27D60; }
+
+        .table-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+        }
+        .table-empty .empty-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(20,30,40,0.5);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: #fff;
+            border-radius: var(--border-radius-lg);
+            padding: 36px;
+            width: 90%; max-width: 460px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.25,0.8,0.25,1);
+        }
+        .modal-overlay.active .modal-box { transform: scale(1) translateY(0); }
+        .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+        .modal-title  { font-size: 1.2rem; font-weight: 700; color: var(--color-text-main); }
+        .modal-subtitle { font-size: 0.85rem; color: var(--color-text-muted); margin-top: 4px; }
+        .modal-close {
+            width: 32px; height: 32px;
+            border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);
+            background: transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: var(--color-text-muted);
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background: rgba(0,0,0,0.05); }
+
+        .confirm-dialog { text-align: center; padding: 8px 0; }
+        .confirm-icon   { font-size: 3rem; margin-bottom: 12px; display: block; }
+        .confirm-title  { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .confirm-desc   { font-size: 0.88rem; color: var(--color-text-muted); margin-bottom: 24px; }
+        .confirm-actions { display: flex; gap: 12px; justify-content: center; }
+
+        .form-alert {
+            padding: 10px 14px;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .form-alert.error   { background: rgba(239,68,68,0.08); color: #DC2626; border: 1px solid rgba(239,68,68,0.2); display: block; }
+        .form-alert.success { background: rgba(117,154,114,0.1); color: var(--color-primary-hover); border: 1px solid rgba(117,154,114,0.25); display: block; }
+
+        .log-action { font-size: 0.88rem; }
+        .log-time   { font-size: 0.82rem; color: var(--color-text-muted); white-space: nowrap; }
+
+        @media (max-width: 860px) {
+            .admin-layout { grid-template-columns: 1fr; }
+            .admin-sidebar { position: static; height: auto; border: none; border-bottom: 1px solid var(--glass-border); }
+            .admin-main { padding: 20px 16px; }
+        }
+    </style>
 </head>
 <body>
 
     <nav class="navbar">
         <a href="admin.html" class="navbar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            Aura <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_admin_header">| System Admin</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary)"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            Aura <span style="font-size:0.85rem;color:var(--color-text-muted);margin-inline-start:8px;font-weight:500">| لوحة الإدارة</span>
         </a>
         <div class="navbar-links">
-            <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: #2C3E50; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600;">Ad</div>
-                <span style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">Super Admin</span>
+            <div style="display:flex;align-items:center;gap:10px">
+                <div class="user-avatar avatar-admin">Ad</div>
+                <div>
+                    <div style="font-weight:600;font-size:0.9rem;color:var(--color-text-main)">System Admin</div>
+                    <div style="font-size:0.75rem;color:var(--color-text-muted)">Super Admin</div>
+                </div>
             </div>
-            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
-            <a href="login.html" class="btn btn-danger" data-i18n="btn_logout">Logout</a>
+            <button id="langToggle" class="btn btn-outline" style="padding:5px 14px;font-size:0.85rem">EN / AR</button>
+            <a href="login.html" class="btn btn-danger" style="font-size:0.88rem">تسجيل الخروج</a>
         </div>
     </nav>
 
-    <div class="container content-wrapper">
-        <div class="dashboard-grid">
-            
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <ul class="sidebar-nav">
-                    <li><a href="#" class="active" data-i18n="ad_title">System Overview</a></li>
-                    <li><a href="#" data-i18n="ad_users">User Management</a></li>
-                    <li><a href="#" data-i18n="ad_moderation">Community Moderation</a></li>
-                    <li><a href="#" data-i18n="ad_logs">HIPAA Audit Logs</a></li>
-                </ul>
-            </aside>
+    <div class="admin-layout">
 
-            <!-- Main Content -->
-            <main>
-                <div class="card">
-                    <h2 class="card-title" data-i18n="ad_stats_title">Platform Health & Statistics</h2>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 24px;">
-                        
-                        <div style="padding: 24px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); border-radius: var(--border-radius-sm); text-align: center;">
-                            <h3 style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 8px;" data-i18n="ad_stat_active">Active Users</h3>
-                            <p style="color: var(--color-primary); font-size: 2.2rem; font-weight: 700;">1,245</p>
-                        </div>
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <p class="sidebar-section-label">الرئيسية</p>
+            <ul class="sidebar-nav">
+                <li><a href="#" class="active" data-section="overview" id="nav-overview">
+                    <span class="nav-icon">📊</span> نظرة عامة
+                </a></li>
+            </ul>
 
-                        <div style="padding: 24px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); border-radius: var(--border-radius-sm); text-align: center;">
-                            <h3 style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 8px;" data-i18n="ad_stat_reports">Reports Processed</h3>
-                            <p style="color: var(--color-primary); font-size: 2.2rem; font-weight: 700;">8,430</p>
-                        </div>
+            <p class="sidebar-section-label">إدارة المستخدمين</p>
+            <ul class="sidebar-nav">
+                <li><a href="#" data-section="users" id="nav-users">
+                    <span class="nav-icon">👥</span> كل المستخدمين
+                </a></li>
+                <li><a href="#" data-section="add-doctor" id="nav-add-doctor">
+                    <span class="nav-icon">➕</span> إضافة طبيب
+                </a></li>
+            </ul>
 
-                        <div style="padding: 24px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); border-radius: var(--border-radius-sm); text-align: center;">
-                            <h3 style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 8px;" data-i18n="ad_stat_alerts">Flagged Posts</h3>
-                            <p style="color: #E27D60; font-size: 2.2rem; font-weight: 700;">12</p>
-                        </div>
+            <p class="sidebar-section-label">النظام</p>
+            <ul class="sidebar-nav">
+                <li><a href="#" data-section="logs" id="nav-logs">
+                    <span class="nav-icon">📋</span> سجلات التدقيق
+                </a></li>
+            </ul>
 
+            <div style="margin-top:28px;padding:16px;background:rgba(117,154,114,0.07);border-radius:12px;border:1px solid rgba(117,154,114,0.15)">
+                <p style="font-size:0.75rem;font-weight:600;color:var(--color-text-muted);margin-bottom:10px">ملخص سريع</p>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    <div style="display:flex;justify-content:space-between">
+                        <span style="font-size:0.82rem;color:var(--color-text-muted)">إجمالي المستخدمين</span>
+                        <span style="font-size:0.9rem;font-weight:700;color:var(--color-primary)" id="quickTotal">—</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between">
+                        <span style="font-size:0.82rem;color:var(--color-text-muted)">الأطباء</span>
+                        <span style="font-size:0.9rem;font-weight:700;color:var(--color-primary-hover)" id="quickDoctors">—</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between">
+                        <span style="font-size:0.82rem;color:var(--color-text-muted)">أولياء الأمور</span>
+                        <span style="font-size:0.9rem;font-weight:700;color:#3B7DD8" id="quickParents">—</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+
+            <!-- Section: Overview -->
+            <section class="admin-section visible" id="section-overview">
+                <div class="section-header">
+                    <div>
+                        <h1 class="section-title">نظرة عامة على النظام</h1>
+                        <p class="section-subtitle">إحصائيات المنصة الحية والأنشطة الأخيرة</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="refreshAll()">🔄 تحديث</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <span class="stat-icon">👥</span>
+                        <p class="stat-label">إجمالي المستخدمين</p>
+                        <p class="stat-value" id="stat-total">—</p>
+                    </div>
+                    <div class="stat-card accent">
+                        <span class="stat-icon">🛡️</span>
+                        <p class="stat-label">المسؤولون</p>
+                        <p class="stat-value" id="stat-admins">—</p>
+                    </div>
+                    <div class="stat-card primary">
+                        <span class="stat-icon">👨‍⚕️</span>
+                        <p class="stat-label">الأطباء</p>
+                        <p class="stat-value" id="stat-doctors">—</p>
+                    </div>
+                    <div class="stat-card blue">
+                        <span class="stat-icon">👪</span>
+                        <p class="stat-label">أولياء الأمور</p>
+                        <p class="stat-value" id="stat-parents">—</p>
                     </div>
                 </div>
 
-                <div class="card mt-2">
-                    <h2 class="card-title" data-i18n="ad_recent_logs">Recent Audit Logs</h2>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; text-align: left; margin-top: 16px; border-collapse: collapse; font-size: 0.95rem;" dir="auto">
-                            <thead>
-                                <tr style="border-bottom: 2px solid rgba(0,0,0,0.05);">
-                                    <th style="padding: 14px 10px; color: var(--color-text-muted); font-weight: 500;">Action</th>
-                                    <th style="padding: 14px 10px; color: var(--color-text-muted); font-weight: 500;">User Role</th>
-                                    <th style="padding: 14px 10px; color: var(--color-text-muted); font-weight: 500;">Timestamp</th>
-                                    <th style="padding: 14px 10px; color: var(--color-text-muted); font-weight: 500;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                                    <td style="padding: 14px 10px;">Doctor Approved Report #432</td>
-                                    <td style="padding: 14px 10px;">Doctor</td>
-                                    <td style="padding: 14px 10px;">2 mins ago</td>
-                                    <td style="padding: 14px 10px; color: var(--color-primary); font-weight: 500;">Success</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                                    <td style="padding: 14px 10px;">New Parent Account Created</td>
-                                    <td style="padding: 14px 10px;">Parent</td>
-                                    <td style="padding: 14px 10px;">15 mins ago</td>
-                                    <td style="padding: 14px 10px; color: var(--color-primary); font-weight: 500;">Success</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 14px 10px;">Failed Login Attempt</td>
-                                    <td style="padding: 14px 10px;">Unknown</td>
-                                    <td style="padding: 14px 10px;">1 hr ago</td>
-                                    <td style="padding: 14px 10px; color: #E27D60; font-weight: 500;">Warning</td>
-                                </tr>
+                <div class="table-card">
+                    <div style="padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between">
+                        <h2 style="font-size:1rem;font-weight:600;color:var(--color-text-main)">آخر الأنشطة</h2>
+                        <button class="btn btn-outline" style="font-size:0.8rem;padding:5px 12px" onclick="showSection('logs')">عرض الكل</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="admin-table">
+                            <thead><tr><th>الحدث</th><th>الدور</th><th>الوقت</th><th>الحالة</th></tr></thead>
+                            <tbody id="overview-logs-body">
+                                <tr><td colspan="4" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+            </section>
 
-            </main>
+            <!-- Section: User Management -->
+            <section class="admin-section" id="section-users">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">إدارة المستخدمين</h2>
+                        <p class="section-subtitle">عرض وإدارة جميع حسابات المنصة</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddDoctorModal()">➕ إضافة طبيب</button>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-input-wrap">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="userSearch" placeholder="ابحث بالاسم أو البريد...">
+                    </div>
+                    <div class="filter-btns" id="roleFilters">
+                        <button class="filter-btn active" data-role="all">الكل</button>
+                        <button class="filter-btn" data-role="admin">🛡️ مسؤول</button>
+                        <button class="filter-btn" data-role="doctor">👨‍⚕️ طبيب</button>
+                        <button class="filter-btn" data-role="user">👪 ولي أمر</button>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-wrap">
+                        <table class="admin-table">
+                            <thead><tr><th>المستخدم</th><th>الدور</th><th>تاريخ الإنشاء</th><th>إجراء</th></tr></thead>
+                            <tbody id="users-table-body">
+                                <tr><td colspan="4" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="users-table-footer" style="padding:12px 20px;font-size:0.82rem;color:var(--color-text-muted);border-top:1px solid rgba(0,0,0,0.04)"></div>
+                </div>
+            </section>
+
+            <!-- Section: Add Doctor -->
+            <section class="admin-section" id="section-add-doctor">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">إضافة طبيب جديد</h2>
+                        <p class="section-subtitle">إنشاء حساب طبيب جديد في المنصة</p>
+                    </div>
+                </div>
+                <div style="max-width:520px">
+                    <div class="table-card" style="padding:32px;border-radius:var(--border-radius-lg)">
+                        <div id="add-doctor-alert"></div>
+                        <form id="addDoctorForm" novalidate>
+                            <div class="form-group">
+                                <label class="form-label" for="docName">الاسم الكامل</label>
+                                <input type="text" id="docName" class="form-control" placeholder="مثال: د. أحمد محمد" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="docEmail">البريد الإلكتروني</label>
+                                <input type="email" id="docEmail" class="form-control" placeholder="doctor@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="docPassword">كلمة المرور</label>
+                                <input type="password" id="docPassword" class="form-control" placeholder="6 أحرف على الأقل" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" id="addDoctorBtn">
+                                ➕ إضافة الطبيب
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Audit Logs -->
+            <section class="admin-section" id="section-logs">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">سجلات التدقيق</h2>
+                        <p class="section-subtitle">سجل شامل لجميع أحداث النظام</p>
+                    </div>
+                    <button class="btn btn-outline" onclick="loadLogs()">🔄 تحديث</button>
+                </div>
+                <div class="toolbar">
+                    <div class="filter-btns" id="logFilters">
+                        <button class="filter-btn active" data-status="all">الكل</button>
+                        <button class="filter-btn" data-status="success">✅ نجاح</button>
+                        <button class="filter-btn" data-status="warning">⚠️ تحذير</button>
+                        <button class="filter-btn" data-status="error">❌ خطأ</button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-wrap">
+                        <table class="admin-table">
+                            <thead><tr><th>الحدث</th><th>الدور</th><th>الوقت</th><th>الحالة</th></tr></thead>
+                            <tbody id="logs-table-body">
+                                <tr><td colspan="4" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Add Doctor Modal -->
+    <div class="modal-overlay" id="addDoctorModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-title">➕ إضافة طبيب جديد</p>
+                    <p class="modal-subtitle">سيتمكن الطبيب من مراجعة التقارير وتوقيع النتائج</p>
+                </div>
+                <button class="modal-close" onclick="closeAddDoctorModal()">✕</button>
+            </div>
+            <div id="modal-alert"></div>
+            <form id="modalDoctorForm" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="mDocName">الاسم الكامل</label>
+                    <input type="text" id="mDocName" class="form-control" placeholder="مثال: د. أحمد محمد">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="mDocEmail">البريد الإلكتروني</label>
+                    <input type="email" id="mDocEmail" class="form-control" placeholder="doctor@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="mDocPassword">كلمة المرور</label>
+                    <input type="password" id="mDocPassword" class="form-control" placeholder="6 أحرف على الأقل">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="modalAddDoctorBtn">
+                    ➕ إضافة الطبيب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box" style="max-width:380px">
+            <div class="confirm-dialog">
+                <span class="confirm-icon">🗑️</span>
+                <p class="confirm-title">تأكيد الحذف</p>
+                <p class="confirm-desc" id="confirmDesc">هل أنت متأكد من حذف هذا المستخدم؟</p>
+                <div class="confirm-actions">
+                    <button class="btn btn-outline" onclick="closeConfirmModal()">إلغاء</button>
+                    <button class="btn btn-danger" id="confirmDeleteBtn" style="background:rgba(226,125,96,0.1)">حذف المستخدم</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="app.js"></script>
+    <script>
+    let allUsers = [];
+    let allLogs  = [];
+    let pendingDeleteId = null;
+
+    function getInitials(name='') {
+        return name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+
+    function timeAgo(iso) {
+        const diff = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(diff/60000), h = Math.floor(diff/3600000), d = Math.floor(diff/86400000);
+        if (m < 1) return 'الآن';
+        if (m < 60) return `منذ ${m} دقيقة`;
+        if (h < 24) return `منذ ${h} ساعة`;
+        return `منذ ${d} يوم`;
+    }
+
+    function formatDate(iso) {
+        if (!iso) return '—';
+        return new Date(iso).toLocaleDateString('ar-SA', { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    function roleName(r) { return {admin:'مسؤول',doctor:'طبيب',user:'ولي أمر'}[r]||r; }
+    function roleIcon(r) { return {admin:'🛡️',doctor:'👨‍⚕️',user:'👪'}[r]||'👤'; }
+    function statusLabel(s) { return {success:'نجاح',warning:'تحذير',error:'خطأ'}[s]||s; }
+
+    function countUp(el, target, dur=800) {
+        const start = Date.now();
+        const tick = () => {
+            const p = Math.min((Date.now()-start)/dur, 1);
+            const ease = p<0.5 ? 2*p*p : -1+(4-2*p)*p;
+            el.textContent = Math.round(ease*target);
+            if (p < 1) requestAnimationFrame(tick); else el.textContent = target;
+        };
+        requestAnimationFrame(tick);
+    }
+
+    function showSection(name) {
+        document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('visible'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a=>a.classList.remove('active'));
+        document.getElementById(`section-${name}`)?.classList.add('visible');
+        document.getElementById(`nav-${name}`)?.classList.add('active');
+        if (name==='overview') loadOverview();
+        if (name==='users')    loadUsers();
+        if (name==='logs')     loadLogs();
+    }
+
+    document.querySelectorAll('.sidebar-nav a[data-section]').forEach(link => {
+        link.addEventListener('click', e => { e.preventDefault(); showSection(link.dataset.section); });
+    });
+
+    async function loadStats() {
+        try {
+            const data = await fetch('/api/stats').then(r=>r.json());
+            countUp(document.getElementById('stat-total'),   data.total);
+            countUp(document.getElementById('stat-admins'),  data.admins);
+            countUp(document.getElementById('stat-doctors'), data.doctors);
+            countUp(document.getElementById('stat-parents'), data.parents);
+            document.getElementById('quickTotal').textContent   = data.total;
+            document.getElementById('quickDoctors').textContent = data.doctors;
+            document.getElementById('quickParents').textContent = data.parents;
+        } catch(e) { console.error(e); }
+    }
+
+    async function loadOverviewLogs() {
+        const body = document.getElementById('overview-logs-body');
+        try {
+            const logs = await fetch('/api/logs?limit=8').then(r=>r.json());
+            if (!logs.length) { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">📭</span>لا توجد أحداث بعد</td></tr>`; return; }
+            body.innerHTML = logs.map(log=>`
+                <tr>
+                    <td class="log-action">${log.action}</td>
+                    <td><span class="role-badge ${log.role}">${roleIcon(log.role)} ${roleName(log.role)}</span></td>
+                    <td class="log-time">${timeAgo(log.timestamp)}</td>
+                    <td><span class="status-badge ${log.status}">${statusLabel(log.status)}</span></td>
+                </tr>`).join('');
+        } catch { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">❌</span>تعذّر التحميل</td></tr>`; }
+    }
+
+    function loadOverview() { loadStats(); loadOverviewLogs(); }
+
+    async function loadUsers() {
+        const body = document.getElementById('users-table-body');
+        body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        try {
+            allUsers = await fetch('/api/users').then(r=>r.json());
+            renderUsers(allUsers);
+        } catch { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">❌</span>تعذّر تحميل المستخدمين</td></tr>`; }
+    }
+
+    function renderUsers(users) {
+        const body   = document.getElementById('users-table-body');
+        const footer = document.getElementById('users-table-footer');
+        if (!users.length) { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">👤</span>لا يوجد مستخدمون مطابقون</td></tr>`; footer.textContent=''; return; }
+        body.innerHTML = users.map(u=>`
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar avatar-${u.role}">${getInitials(u.name)}</div>
+                        <div><div class="user-name">${u.name}</div><div class="user-email">${u.email}</div></div>
+                    </div>
+                </td>
+                <td><span class="role-badge ${u.role}">${roleIcon(u.role)} ${roleName(u.role)}</span></td>
+                <td style="color:var(--color-text-muted);font-size:0.88rem">${formatDate(u.createdAt)}</td>
+                <td>${u.role!=='admin' ? `<button class="btn-icon" title="حذف" onclick="confirmDelete('${u.id}','${u.name}')">🗑️</button>` : `<span style="font-size:0.78rem;color:var(--color-text-muted)">محمي</span>`}</td>
+            </tr>`).join('');
+        footer.textContent = `إجمالي: ${users.length} مستخدم`;
+    }
+
+    let activeRole = 'all';
+    function applyFilters() {
+        const q = document.getElementById('userSearch').value.toLowerCase().trim();
+        let filtered = activeRole==='all' ? allUsers : allUsers.filter(u=>u.role===activeRole);
+        if (q) filtered = filtered.filter(u=>u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q));
+        renderUsers(filtered);
+    }
+    document.getElementById('userSearch').addEventListener('input', applyFilters);
+    document.getElementById('roleFilters').addEventListener('click', e=>{
+        const btn=e.target.closest('.filter-btn'); if(!btn) return;
+        document.querySelectorAll('#roleFilters .filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active'); activeRole=btn.dataset.role; applyFilters();
+    });
+
+    function confirmDelete(id, name) {
+        pendingDeleteId = id;
+        document.getElementById('confirmDesc').textContent=`هل أنت متأكد من حذف "${name}"؟ لا يمكن التراجع عن هذا الإجراء.`;
+        document.getElementById('confirmModal').classList.add('active');
+    }
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async()=>{
+        if (!pendingDeleteId) return;
+        const btn=document.getElementById('confirmDeleteBtn');
+        btn.textContent='جاري الحذف...'; btn.disabled=true;
+        try {
+            const data=await fetch(`/api/users/${pendingDeleteId}`,{method:'DELETE'}).then(r=>r.json());
+            if (data.success) { closeConfirmModal(); await loadUsers(); await loadStats(); await loadOverviewLogs(); }
+        } catch { alert('حدث خطأ أثناء الحذف'); }
+        finally { btn.textContent='حذف المستخدم'; btn.disabled=false; }
+    });
+    function closeConfirmModal() { pendingDeleteId=null; document.getElementById('confirmModal').classList.remove('active'); }
+
+    function openAddDoctorModal() {
+        document.getElementById('addDoctorModal').classList.add('active');
+        document.getElementById('modal-alert').innerHTML='';
+        document.getElementById('modalDoctorForm').reset();
+    }
+    function closeAddDoctorModal() { document.getElementById('addDoctorModal').classList.remove('active'); }
+
+    async function submitDoctor(nameId, emailId, passId, alertId, btnId, onSuccess) {
+        const alertEl=document.getElementById(alertId), btn=document.getElementById(btnId);
+        const name=document.getElementById(nameId).value.trim();
+        const email=document.getElementById(emailId).value.trim();
+        const pass=document.getElementById(passId).value;
+        alertEl.innerHTML='';
+        if (!name||!email||!pass) { alertEl.innerHTML=`<div class="form-alert error">يرجى ملء جميع الحقول</div>`; return; }
+        btn.disabled=true; btn.textContent='جاري الإضافة...';
+        try {
+            const data=await fetch('/api/admin/add-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})}).then(r=>r.json());
+            if (data.success) { alertEl.innerHTML=`<div class="form-alert success">✅ تمت إضافة الطبيب بنجاح!</div>`; onSuccess(); await loadStats(); }
+            else alertEl.innerHTML=`<div class="form-alert error">${data.message}</div>`;
+        } catch { alertEl.innerHTML=`<div class="form-alert error">حدث خطأ في الاتصال</div>`; }
+        finally { btn.disabled=false; btn.textContent='➕ إضافة الطبيب'; }
+    }
+
+    document.getElementById('modalDoctorForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        submitDoctor('mDocName','mDocEmail','mDocPassword','modal-alert','modalAddDoctorBtn', ()=>{ document.getElementById('modalDoctorForm').reset(); setTimeout(closeAddDoctorModal,1800); });
+    });
+    document.getElementById('addDoctorForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        submitDoctor('docName','docEmail','docPassword','add-doctor-alert','addDoctorBtn', ()=>{ document.getElementById('addDoctorForm').reset(); });
+    });
+
+    let activeLogStatus='all';
+    async function loadLogs() {
+        const body=document.getElementById('logs-table-body');
+        body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        try { allLogs=await fetch('/api/logs?limit=100').then(r=>r.json()); renderLogs(allLogs); }
+        catch { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">❌</span>تعذّر التحميل</td></tr>`; }
+    }
+    function renderLogs(logs) {
+        const body=document.getElementById('logs-table-body');
+        if (!logs.length) { body.innerHTML=`<tr><td colspan="4" class="table-empty"><span class="empty-icon">📭</span>لا توجد سجلات بعد</td></tr>`; return; }
+        body.innerHTML=logs.map(log=>`
+            <tr>
+                <td class="log-action">${log.action}</td>
+                <td><span class="role-badge ${log.role}">${roleIcon(log.role)} ${roleName(log.role)}</span></td>
+                <td class="log-time">${timeAgo(log.timestamp)}</td>
+                <td><span class="status-badge ${log.status}">${statusLabel(log.status)}</span></td>
+            </tr>`).join('');
+    }
+    document.getElementById('logFilters').addEventListener('click', e=>{
+        const btn=e.target.closest('.filter-btn'); if(!btn) return;
+        document.querySelectorAll('#logFilters .filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active'); activeLogStatus=btn.dataset.status;
+        renderLogs(activeLogStatus==='all' ? allLogs : allLogs.filter(l=>l.status===activeLogStatus));
+    });
+
+    function refreshAll() { loadOverview(); }
+
+    document.getElementById('addDoctorModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAddDoctorModal(); });
+    document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeConfirmModal(); });
+
+    document.addEventListener('DOMContentLoaded', () => { loadOverview(); });
+    </script>
 </body>
 </html>
