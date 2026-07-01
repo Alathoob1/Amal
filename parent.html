@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard - Aura</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="parent.html" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Aura <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_parent_header">| Parent Portal</span>
+        </a>
+        <div class="navbar-links">
+            <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">P</div>
+                <span style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">Sarah A.</span>
+            </div>
+            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
+            <a href="login.html" class="btn btn-danger" data-i18n="btn_logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container content-wrapper">
+        <div class="dashboard-grid">
+            
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <ul class="sidebar-nav">
+                    <li><a href="#" class="active" data-i18n="pd_title">Child Profile & Dashboard</a></li>
+                    <li><a href="#" data-i18n="pd_upload">Upload Drawing</a></li>
+                    <li><a href="#" data-i18n="pd_reports">My Reports</a></li>
+                    <li><a href="#" data-i18n="pd_community">Community Support</a></li>
+                </ul>
+            </aside>
+
+            <!-- Main Content -->
+            <main>
+                <div class="alert-clinical">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--color-accent);">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span data-i18n="disclaimer">This AI analysis provides supportive behavioral indicators, not a clinical diagnosis. All reports are pending human medical review.</span>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title" data-i18n="upload_title" style="margin-bottom: 8px;">Upload a New Drawing</h2>
+                    <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="upload_desc">Drag and drop your child's drawing here, or click to browse. Max size 5MB.</p>
+                    
+                    <div class="upload-area" id="uploadAction">
+                        <div class="upload-icon" style="margin-bottom: 16px;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <button class="btn btn-outline" data-i18n="btn_upload">Select File</button>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content text-center">
+            <h2 id="modalTitle" style="color: var(--color-primary); margin-bottom: 16px;" data-i18n="modal_title">Uploading Drawing...</h2>
+            <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="modal_desc">Please wait while we securely process the image.</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

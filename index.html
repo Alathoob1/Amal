@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura - Autism Healthcare</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Aura
+        </a>
+        <div class="navbar-links">
+            <a href="index.html" class="active" data-i18n="nav_home">Home</a>
+            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px; margin-inline-start: 16px;">EN / AR</button>
+            <a href="login.html" class="btn btn-primary" data-i18n="btn_login">Login</a>
+        </div>
+    </nav>
+
+    <div class="container content-wrapper">
+        <div class="card text-center" style="padding: 80px 24px; max-width: 800px; margin: 0 auto;">
+            <h1 style="color: var(--color-primary); font-size: 3rem; margin-bottom: 24px; line-height: 1.2;" data-i18n="welcome_title">A Safe Space for Growth</h1>
+            <p style="color: var(--color-text-muted); font-size: 1.15rem; max-width: 600px; margin: 0 auto 40px;" data-i18n="welcome_desc">
+                AI-assisted pediatric psychology platform designed with sensory safety and empathy at its core.
+            </p>
+            <a href="login.html" class="btn btn-primary" style="font-size: 1.1rem; padding: 14px 40px;" data-i18n="btn_get_started">Get Started</a>
+        </div>
+        
+        <div class="alert-clinical" style="max-width: 800px; margin: 40px auto 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span data-i18n="disclaimer">This AI analysis provides supportive behavioral indicators, not a clinical diagnosis. All reports are pending human medical review.</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

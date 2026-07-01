@@ -1,0 +1,5 @@
+node_modules/
+aura-app/node_modules/
+.env
+*.log
+dist/

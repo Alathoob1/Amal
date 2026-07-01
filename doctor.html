@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard - Aura</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="doctor.html" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Aura <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_doctor_header">| Doctor Portal</span>
+        </a>
+        <div class="navbar-links">
+            <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600;">Dr</div>
+                <span style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">Dr. Ahmed</span>
+            </div>
+            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
+            <a href="login.html" class="btn btn-danger" data-i18n="btn_logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container content-wrapper">
+        <div class="dashboard-grid">
+            
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <ul class="sidebar-nav">
+                    <li><a href="#" class="active" data-i18n="dd_title">Doctor Review Dashboard</a></li>
+                    <li><a href="#" data-i18n="dd_queue">Pending Reviews (3)</a></li>
+                    <li><a href="#" data-i18n="dd_patients">My Patients</a></li>
+                    <li><a href="#" data-i18n="dd_history">Review History</a></li>
+                </ul>
+            </aside>
+
+            <!-- Main Content -->
+            <main>
+                <div class="card">
+                    <div class="flex justify-between items-center" style="margin-bottom: 24px;">
+                        <h2 class="card-title" data-i18n="queue_title" style="margin: 0;">Pending AI Drafts</h2>
+                        <span style="background: rgba(223, 164, 139, 0.2); color: #8C5B48; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">3 High Priority</span>
+                    </div>
+
+                    <!-- Queue Item 1 -->
+                    <div style="border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                        <div>
+                            <h3 style="font-size: 1.1rem; color: var(--color-text-main); margin-bottom: 4px;" data-i18n="patient_name">Patient: Leo M. (Age 6)</h3>
+                            <p style="color: var(--color-primary); font-weight: 600; font-size: 0.95rem;" data-i18n="ai_confidence">AI Confidence: 85%</p>
+                            <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 4px;">Uploaded: 2 hours ago</p>
+                        </div>
+                        <button class="btn btn-primary" data-i18n="btn_review">Review & Edit Draft</button>
+                    </div>
+
+                    <!-- Queue Item 2 (Mock data) -->
+                    <div style="border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                        <div>
+                            <h3 style="font-size: 1.1rem; color: var(--color-text-main); margin-bottom: 4px;" data-i18n="patient_name_2">Patient: Sara A. (Age 9)</h3>
+                            <p style="color: var(--color-primary); font-weight: 600; font-size: 0.95rem;" data-i18n="ai_confidence_2">AI Confidence: 92%</p>
+                            <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 4px;" data-i18n="uploaded_time_2">Uploaded: 5 hours ago</p>
+                        </div>
+                        <button class="btn btn-outline" data-i18n="btn_review">Review & Edit Draft</button>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
