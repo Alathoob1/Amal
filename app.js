@@ -98,7 +98,7 @@ const translations = {
     uploaded_time_2: "تم الرفع: منذ 5 ساعات",
     
     // Admin Dashboard
-    ad_title: "نظرة عامة على النظام",
+    ad_title: "لوحة المتابعة",
     ad_users: "إدارة المستخدمين",
     ad_moderation: "إشراف المجتمع",
     ad_logs: "سجلات تدقيق HIPAA",

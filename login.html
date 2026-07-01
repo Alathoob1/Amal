@@ -60,7 +60,7 @@
                 
                 <div class="form-group" style="margin-bottom: 32px;">
                     <label class="form-label" data-i18n="login_password">Password</label>
-                    <input type="password" class="form-control" required placeholder="••••••••">
+                    <input type="password" id="passwordInput" class="form-control" required placeholder="••••••••">
                 </div>
                 
                 <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px;" data-i18n="btn_login_submit">Sign In</button>
@@ -74,38 +74,61 @@
 
     <script src="app.js"></script>
     <script>
-        // Automatic routing based on email domain/patterns
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('loginForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const emailInput = document.getElementById('emailInput');
-                const email = emailInput.value.trim().toLowerCase();
-                
-                let role = 'parent'; // default fallback
-                
-                // Redirection logic based on domain or email format
-                if (email === 'admin@aura.com' || email.endsWith('.admin') || email.includes('@admin.') || email.split('@')[1]?.includes('admin')) {
-                    role = 'admin';
-                } else if (
-                    email === 'dr@aura.com' || 
-                    email.startsWith('dr@') || 
-                    email.endsWith('.doc') || 
-                    email.endsWith('.doctor') || 
-                    email.includes('@doctor') || 
-                    email.split('@')[1]?.includes('doc')
-                ) {
-                    role = 'doctor';
-                } else {
-                    role = 'parent';
-                }
+            const loginForm = document.getElementById('loginForm');
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
 
-                // Redirect to the correct page
-                if (role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (role === 'doctor') {
-                    window.location.href = 'doctor.html';
-                } else {
-                    window.location.href = 'parent.html';
+            // Insert alert div before form
+            const alertDiv = document.createElement('div');
+            alertDiv.style.display = 'none';
+            alertDiv.style.padding = '10px 14px';
+            alertDiv.style.borderRadius = '8px';
+            alertDiv.style.marginBottom = '16px';
+            alertDiv.style.fontSize = '0.9rem';
+            loginForm.parentNode.insertBefore(alertDiv, loginForm);
+
+            function showAlert(message, type = 'error') {
+                alertDiv.style.display = 'block';
+                alertDiv.textContent = message;
+                alertDiv.style.backgroundColor = type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(117,154,114,0.1)';
+                alertDiv.style.color = type === 'error' ? '#DC2626' : '#759A72';
+                alertDiv.style.border = `1px solid ${type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(117,154,114,0.2)'}`;
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('emailInput').value.trim();
+                const password = document.getElementById('passwordInput').value;
+                
+                submitBtn.disabled = true;
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'جاري التحقق... / Checking...';
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showAlert('تم تسجيل الدخول بنجاح! / Login successful!', 'success');
+                        setTimeout(() => {
+                            if (data.role === 'admin') window.location.href = 'admin.html';
+                            else if (data.role === 'doctor') window.location.href = 'doctor.html';
+                            else window.location.href = 'parent.html';
+                        }, 1000);
+                    } else {
+                        showAlert(data.message || 'فشل تسجيل الدخول / Login failed');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                } catch (error) {
+                    showAlert('حدث خطأ في الاتصال بالخادم / Connection error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
                 }
             });
         });

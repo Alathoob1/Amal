@@ -3,3 +3,4 @@ aura-app/node_modules/
 .env
 *.log
 dist/
+*.sqlite  
