@@ -3,23 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Aura</title>
+    <title>بوابة الطبيب - أمل</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        let doctorData = null;
+        const doctorId = localStorage.getItem('auraUserId');
+        const role = localStorage.getItem('auraUserRole');
+        
+        if (!doctorId || role !== 'doctor') {
+            window.location.href = 'login.html';
+        }
+
+        let conversations = [];
+        let activeConversationId = null;
+        let activeParentId = null;
+
+        async function initDoctorApp() {
+            try {
+                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+                const res = await fetch(API_BASE + `/api/doctors/${doctorId}/data`);
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                doctorData = await res.json();
+                if(doctorData.error) throw new Error(doctorData.error);
+                
+                // Set name
+                const navName = document.getElementById('doc-navbar-name');
+                if (navName) navName.textContent = doctorData.profile.name;
+                const navAvatar = document.getElementById('doc-navbar-avatar');
+                if (navAvatar) navAvatar.textContent = doctorData.profile.name.charAt(0);
+                
+                console.log("Logged in user id:", doctorId);
+                console.log("Doctor id:", doctorId);
+                
+                await loadConversations();
+                renderDoctorDashboard();
+            } catch (err) {
+                console.error("Failed to fetch doctor data:", err);
+                const chatList = document.getElementById('doc-chat-list');
+                if (chatList) {
+                    chatList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-text-muted);">No conversations found</div>';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initDoctorApp);
+    </script>
+    <style>
+        .profile-tab { padding: 12px 24px; font-size: 0.95rem; cursor: pointer; border: 1px solid transparent; transition: all 0.3s; white-space: nowrap; background: transparent; color: var(--color-text-muted); font-weight: 500; }
+        .profile-tab.active { background: #fff; color: var(--color-primary); font-weight: 600; border: 1px solid var(--glass-border); border-bottom: 2px solid var(--color-primary); border-radius: 8px 8px 0 0; }
+        .profile-tab:hover:not(.active) { background: rgba(255,255,255,0.5); }
+        .profile-tab-content { display: none; padding: 24px; background: #fff; border: 1px solid var(--glass-border); border-top: none; border-radius: 0 0 8px 8px; }
+        .profile-tab-content.active { display: block; }
+        
+        .smart-alert { padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--glass-border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 12px;}
+        .chat-filter { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap; user-select: none; background: rgba(0,0,0,0.05); color: var(--color-text-muted); font-weight: 500; border: none; }
+        .chat-filter.active { background: var(--color-primary); color: #fff; }
+        
+        .chat-item { transition: all 0.3s; cursor: pointer; padding: 16px; border-bottom: 1px solid var(--glass-border); border-right: 3px solid transparent; }
+        .chat-item:hover { background: rgba(0,0,0,0.02); }
+        .chat-item.active { background: #fff; border-right-color: var(--color-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .chat-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; position: relative; }
+        .chat-bubble.sent { align-self: flex-end; background: var(--color-primary); color: white; border-bottom-left-radius: 4px; }
+        .chat-bubble.received { align-self: flex-start; background: #fff; border: 1px solid var(--glass-border); border-bottom-right-radius: 4px; color: var(--color-text-main); }
+        
+        .profile-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed rgba(0,0,0,0.05); font-size: 0.95rem;}
+        .profile-stat-row:last-child { border-bottom: none; }
+        
+        .activity-item { padding: 12px; border-radius: 6px; background: rgba(0,0,0,0.015); transition: background 0.3s; border-right: 3px solid transparent; margin-bottom: 12px;}
+        .activity-item:hover { background: rgba(0,0,0,0.03); }
+        
+        .toggle-switch { width: 44px; height: 24px; background: var(--color-primary); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s; }
+        .toggle-switch::after { content: ''; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
+        .toggle-switch.off { background: rgba(0,0,0,0.2); }
+        .toggle-switch.off::after { transform: translateX(20px); }
+        
+        .clickable-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        
+        .dash-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--glass-border); }
+        .dash-list-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .table-custom { width: 100%; border-collapse: collapse; text-align: right; min-width: 900px; }
+        .table-custom th { padding: 16px; font-weight: 600; background: rgba(0,0,0,0.03); border-bottom: 1px solid var(--glass-border); color: var(--color-text-muted); font-size: 0.9rem;}
+        .table-custom td { padding: 16px; border-bottom: 1px solid var(--glass-border); transition: background 0.3s; font-size: 0.95rem; color: var(--color-text-main); }
+        .table-custom tbody tr:hover td { background: rgba(0,0,0,0.01); }
+        
+        .badge-dynamic { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .badge-ready { background: rgba(117,154,114,0.15); color: #3B5E39; }
+        .badge-sent { background: rgba(0,0,0,0.05); color: var(--color-text-muted); }
+        .badge-edit { background: rgba(226,125,96,0.15); color: #E27D60; }
+        .badge-draft { background: rgba(144,180,242,0.15); color: #1D4ED8; }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .btn-icon { background: none; border: none; cursor: pointer; color: var(--color-text-muted); transition: color 0.2s; }
+        .btn-icon:hover { color: var(--color-primary); }
+    </style>
 </head>
 <body>
 
     <nav class="navbar">
         <a href="doctor.html" class="navbar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            Aura <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_doctor_header">| Doctor Portal</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            <span style="color: var(--color-primary); font-size: 1.5rem; font-weight: 900;">أمل</span> 
+            <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;">| بوابة الطبيب</span>
         </a>
         <div class="navbar-links">
             <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600;">Dr</div>
-                <span style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">Dr. Ahmed</span>
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600;">د</div>
+                <span style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">د. أحمد</span>
             </div>
-            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
-            <a href="login.html" class="btn btn-danger" data-i18n="btn_logout">Logout</a>
+            <button class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
+            <a href="login.html" class="btn btn-danger">تسجيل الخروج</a>
         </div>
     </nav>
 
@@ -28,47 +122,936 @@
             
             <!-- Sidebar -->
             <aside class="sidebar">
-                <ul class="sidebar-nav">
-                    <li><a href="#" class="active" data-i18n="dd_title">Doctor Review Dashboard</a></li>
-                    <li><a href="#" data-i18n="dd_queue">Pending Reviews (3)</a></li>
-                    <li><a href="#" data-i18n="dd_patients">My Patients</a></li>
-                    <li><a href="#" data-i18n="dd_history">Review History</a></li>
+                <ul class="sidebar-nav" id="sidebar-menu">
+                    <li><a href="#" onclick="showSection('dashboard-section', this)" class="active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> لوحة التحكم</a></li>
+                    <li><a href="#" onclick="showSection('patients-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> مرضاي</a></li>
+                    <li><a href="#" onclick="showSection('review-list-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-9 5 18 2-9h5"></path></svg> مراجعة التحليلات</a></li>
+                    <li><a href="#" onclick="showSection('reports-list-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> التقارير</a></li>
+                    <li><a href="#" onclick="showSection('appointments-list-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> المواعيد</a></li>
+                    <li><a href="#" onclick="showSection('messages-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> الرسائل</a></li>
+                    <li><a href="#" onclick="showSection('profile-section', this)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> الملف الشخصي</a></li>
                 </ul>
             </aside>
 
             <!-- Main Content -->
             <main>
-                <div class="card">
-                    <div class="flex justify-between items-center" style="margin-bottom: 24px;">
-                        <h2 class="card-title" data-i18n="queue_title" style="margin: 0;">Pending AI Drafts</h2>
-                        <span style="background: rgba(223, 164, 139, 0.2); color: #8C5B48; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">3 High Priority</span>
-                    </div>
-
-                    <!-- Queue Item 1 -->
-                    <div style="border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                <!-- ============================================== -->
+                <!-- 1. Dashboard Section -->
+                <!-- ============================================== -->
+                <div id="dashboard-section" class="section-content" style="display: block;">
+                    <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h3 style="font-size: 1.1rem; color: var(--color-text-main); margin-bottom: 4px;" data-i18n="patient_name">Patient: Leo M. (Age 6)</h3>
-                            <p style="color: var(--color-primary); font-weight: 600; font-size: 0.95rem;" data-i18n="ai_confidence">AI Confidence: 85%</p>
-                            <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 4px;">Uploaded: 2 hours ago</p>
+                            <h2 style="margin: 0 0 8px 0; font-size: 1.6rem; color: var(--color-text-main);">مرحباً بك، د. أحمد </h2>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 1.05rem;">لديك اليوم <strong style="color: var(--color-primary);">5 جلسات</strong> و <strong style="color: #E27D60;">3 تحليلات</strong> بانتظار المراجعة.</p>
                         </div>
-                        <button class="btn btn-primary" data-i18n="btn_review">Review & Edit Draft</button>
+                        <div style="text-align: left;">
+                            <span style="display: block; color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 4px;">تاريخ اليوم</span>
+                            <strong style="color: var(--color-text-main); font-size: 1.1rem;">الخميس، 2 يوليو</strong>
+                        </div>
                     </div>
 
-                    <!-- Queue Item 2 (Mock data) -->
-                    <div style="border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
-                        <div>
-                            <h3 style="font-size: 1.1rem; color: var(--color-text-main); margin-bottom: 4px;" data-i18n="patient_name_2">Patient: Sara A. (Age 9)</h3>
-                            <p style="color: var(--color-primary); font-weight: 600; font-size: 0.95rem;" data-i18n="ai_confidence_2">AI Confidence: 92%</p>
-                            <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 4px;" data-i18n="uploaded_time_2">Uploaded: 5 hours ago</p>
+                    <div style="display: flex; flex-direction: column; margin-bottom: 24px;">
+                        <div class="smart-alert" style="border-right: 4px solid #E27D60; background: rgba(226,125,96,0.05);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="background: rgba(226, 125, 96, 0.1); color: #E27D60; padding: 6px; border-radius: 50%;"></div>
+                                <div><strong style="color: #E27D60;">موعد قريب:</strong> الجلسة القادمة مع (أحمد خالد) ستبدأ خلال 15 دقيقة.</div>
+                            </div>
+                            <button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px; background: #E27D60; border-color: #E27D60;" onclick="showAppointmentDetail('أحمد خالد')">بدء الجلسة</button>
                         </div>
-                        <button class="btn btn-outline" data-i18n="btn_review">Review & Edit Draft</button>
+                        <div class="smart-alert" style="border-right: 4px solid #B7791F; background: rgba(255,193,7,0.05);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="background: rgba(255, 193, 7, 0.1); color: #B7791F; padding: 6px; border-radius: 50%;"></div>
+                                <div><strong style="color: #B7791F;">تنبيه تأخير:</strong> يوجد تحليل للطفل (يوسف أحمد) متأخر عن المراجعة لأكثر من 24 ساعة.</div>
+                            </div>
+                            <button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showAnalysisDetail('يوسف أحمد')">مراجعة الآن</button>
+                        </div>
                     </div>
 
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="card clickable-card" onclick="showSection('appointments-list-section', document.querySelector('.sidebar-nav a:nth-child(5)'))" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(117, 154, 114, 0.1); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">1</div>
+                            <div><h3 style="margin: 0; font-size: 1.8rem; color: var(--color-primary);">5</h3><p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">جلسات اليوم</p></div>
+                        </div>
+                        <div class="card clickable-card" onclick="showSection('review-list-section', document.querySelector('.sidebar-nav a:nth-child(3)'))" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(226, 125, 96, 0.1); color: #E27D60; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">2</div>
+                            <div><h3 style="margin: 0; font-size: 1.8rem; color: #E27D60;">3</h3><p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">بانتظار المراجعة</p></div>
+                        </div>
+                        <div class="card clickable-card" onclick="showSection('reports-list-section', document.querySelector('.sidebar-nav a:nth-child(4)'))" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(144, 180, 242, 0.1); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">3</div>
+                            <div><h3 style="margin: 0; font-size: 1.8rem; color: var(--color-secondary);">2</h3><p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">تقارير جاهزة</p></div>
+                        </div>
+                        <div class="card clickable-card" onclick="showSection('appointments-list-section', document.querySelector('.sidebar-nav a:nth-child(5)'))" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0, 0, 0, 0.05); color: var(--color-text-main); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">4</div>
+                            <div><h3 style="margin: 0; font-size: 1.4rem; color: var(--color-text-main);">11:30 ص</h3><p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">أقرب موعد</p></div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="card" style="padding: 24px; margin-bottom: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                                <h3 style="font-size: 1.1rem; margin: 0;">جدول جلسات اليوم</h3>
+                                <a href="#" onclick="showSection('appointments-list-section', document.querySelector('.sidebar-nav a:nth-child(5)'))" style="font-size: 0.85rem; color: var(--color-primary); text-decoration: none;">عرض الكل</a>
+                            </div>
+                            <div>
+                                <div class="dash-list-item">
+                                    <div><p style="margin: 0 0 4px 0; font-weight: 600; color: var(--color-text-main);">أحمد خالد</p><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">10:00 ص - متابعة سلوكية</p></div>
+                                    <button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showAppointmentDetail('أحمد خالد')">بدء الجلسة</button>
+                                </div>
+                                <div class="dash-list-item">
+                                    <div><p style="margin: 0 0 4px 0; font-weight: 600; color: var(--color-text-main);">سارة محمد</p><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">11:30 ص - تقييم مبدئي</p></div>
+                                    <button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showAppointmentDetail('سارة محمد')">عرض الموعد</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card" style="padding: 24px; margin-bottom: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                                <h3 style="font-size: 1.1rem; margin: 0;">تحليلات بانتظار المراجعة</h3>
+                            </div>
+                            <div>
+                                <div class="dash-list-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="width: 100%; display: flex; justify-content: space-between;"><p style="margin: 0; font-weight: 600; color: var(--color-text-main);">يوسف أحمد</p><span style="font-size: 0.75rem; color: var(--color-text-muted);">منذ ساعتين</span></div>
+                                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 0.8rem; background: rgba(226,125,96,0.1); color: #E27D60; padding: 2px 8px; border-radius: 12px;">ثقة AI: 85%</span><button class="btn btn-outline" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 6px;" onclick="showAnalysisDetail('يوسف أحمد')">مراجعة</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- ============================================== -->
+                <!-- 2. Patients Section -->
+                <!-- ============================================== -->
+                <div id="patients-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">مرضاي</h2>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(117, 154, 114, 0.1); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">24</div>
+                            <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">إجمالي المرضى</p></div>
+                        </div>
+                        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(144, 180, 242, 0.1); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">5</div>
+                            <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">جلسات اليوم</p></div>
+                        </div>
+                        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(226, 125, 96, 0.1); color: #E27D60; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">3</div>
+                            <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">تحليلات بانتظار المراجعة</p></div>
+                        </div>
+                        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 0, 0, 0.05); color: var(--color-text-main); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">2</div>
+                            <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">تقارير تحتاج إرسال</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 16px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <input type="text" class="form-control" placeholder="البحث باسم الطفل..." style="flex: 2; min-width: 200px; border-radius: 8px;">
+                        <select class="form-control" style="flex: 1; min-width: 150px; border-radius: 8px;">
+                            <option value="">مستوى التوحد (الكل)</option>
+                            <option value="low">بسيط</option>
+                            <option value="mid">متوسط</option>
+                            <option value="high">شديد</option>
+                        </select>
+                        <select class="form-control" style="flex: 1; min-width: 150px; border-radius: 8px;">
+                            <option value="">العمر (الكل)</option>
+                            <option value="3-5">3 - 5 سنوات</option>
+                            <option value="6-8">6 - 8 سنوات</option>
+                            <option value="9+">9+ سنوات</option>
+                        </select>
+                        <button class="btn btn-primary" style="padding: 10px 24px; border-radius: 8px;">بحث</button>
+                    </div>
+
+                    <div class="card" style="padding: 0; overflow-x: auto;">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>اسم الطفل</th>
+                                    <th>العمر</th>
+                                    <th>مستوى التوحد</th>
+                                    <th>آخر جلسة</th>
+                                    <th>الجلسة القادمة</th>
+                                    <th>آخر تقرير</th>
+                                    <th>حالة الطفل</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doc-patients-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2.1 Patient Profile Details -->
+                <div id="patient-profile-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--color-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">أ</div>
+                            <div>
+                                <h2 class="card-title" style="margin: 0; color: var(--color-text-main);" id="profile-patient-name">أحمد خالد</h2>
+                                <p style="margin: 0; color: var(--color-text-muted); font-size: 0.95rem;">ملف رقم: #10024 | العمر: 6 سنوات | مستوى التوحد: متوسط</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline" onclick="showSection('patients-section')">العودة لقائمة المرضى ➔</button>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; overflow-x: auto; padding-top: 8px;">
+                            <button class="profile-tab active" onclick="showProfileTab('tab-basic', this)">البيانات الأساسية</button>
+                            <button class="profile-tab" onclick="showProfileTab('tab-sessions', this)">الجلسات</button>
+                            <button class="profile-tab" onclick="showProfileTab('tab-ai', this)">تحليلات AI</button>
+                            <button class="profile-tab" onclick="showProfileTab('tab-reports', this)">التقارير</button>
+                            <button class="profile-tab" onclick="showProfileTab('tab-progress', this)">مؤشرات التطور</button>
+                        </div>
+
+                        <!-- Tab contents -->
+                        <div id="tab-basic" class="profile-tab-content active">
+                            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">معلومات ولي الأمر والتواصل</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <p><strong>اسم ولي الأمر:</strong> خالد عبدالله</p>
+                                    <p><strong>القرابة:</strong> أب</p>
+                                    <p><strong>رقم الجوال:</strong> 0501234567</p>
+                                </div>
+                                <div>
+                                    <p><strong>تاريخ التسجيل:</strong> 01 يناير 2026</p>
+                                    <p><strong>ملاحظات طبية عامة:</strong> يعاني من تشتت انتباه متقطع ويحتاج دعم بصري مستمر.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tab-sessions" class="profile-tab-content">
+                            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">سجل الجلسات السابقة</h3>
+                            <table class="table-custom" style="min-width: 100%;">
+                                <thead><tr><th>التاريخ</th><th>النوع</th><th>المدة</th><th>ملاحظات الطبيب</th></tr></thead>
+                                <tbody>
+                                    <tr><td>25 يونيو 2026</td><td>علاج سلوكي</td><td>45 دقيقة</td><td>استجابة جيدة للتمارين البصرية، يحتاج تعزيز مستمر.</td></tr>
+                                    <tr><td>18 يونيو 2026</td><td>تقييم</td><td>60 دقيقة</td><td>جلسة تقييمية ممتازة، تم تحديد الخطة.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="tab-ai" class="profile-tab-content">
+                            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">تاريخ التحليلات للرسوم</h3>
+                            <div class="dash-list-item">
+                                <div><p style="margin:0; font-weight:600;">رسم العائلة</p><p style="margin:0; font-size:0.85rem; color:var(--color-text-muted);">20 يونيو 2026 - ثقة: 90%</p></div>
+                                <span class="badge-dynamic badge-ready">معتمد</span>
+                            </div>
+                        </div>
+                        <div id="tab-reports" class="profile-tab-content">
+                            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">التقارير الطبية الصادرة</h3>
+                            <div class="dash-list-item">
+                                <div><p style="margin:0; font-weight:600;">تقرير التطور النصفي</p><p style="margin:0; font-size:0.85rem; color:var(--color-text-muted);">01 يوليو 2026</p></div>
+                                <button class="btn btn-outline" style="padding:4px 12px; font-size:0.8rem;">عرض التقرير</button>
+                            </div>
+                        </div>
+                        <div id="tab-progress" class="profile-tab-content">
+                            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">مؤشرات التطور السلوكي والعاطفي</h3>
+                            <p style="color: var(--color-text-muted);">رسوم بيانية توضح معدلات التحسن بناءً على الجلسات وتحليلات الذكاء الاصطناعي (يتطلب مكتبة رسوم بيانية).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 3. Review Analyses Section -->
+                <!-- ============================================== -->
+                <div id="review-list-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">مراجعة التحليلات</h2>
+                    </div>
+
+                    <div class="card" style="padding: 16px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <input type="text" class="form-control" placeholder="البحث باسم الطفل..." style="flex: 2; min-width: 200px; border-radius: 8px;">
+                        <select class="form-control" style="flex: 1; min-width: 150px; border-radius: 8px;">
+                            <option value="">الحالة (الكل)</option>
+                            <option value="pending">بانتظار المراجعة</option>
+                            <option value="edit">يحتاج تعديل</option>
+                            <option value="approved">معتمد</option>
+                        </select>
+                    </div>
+
+                    <div class="card" style="padding: 0; overflow-x: auto;">
+                        <table class="table-custom">
+                            <thead><tr><th>اسم الطفل</th><th>تاريخ الرفع</th><th>نسبة الثقة</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+                            <tbody id="doc-reviews-tbody">
+                                <tr>
+                                    <td style="font-weight: 600;">يوسف أحمد</td>
+                                    <td>اليوم 08:00 ص</td>
+                                    <td><span class="badge-dynamic" style="background: rgba(144,180,242,0.15); color: #1D4ED8;">85%</span></td>
+                                    <td><span class="badge-dynamic badge-edit" style="color: #B7791F; background: rgba(255,193,7,0.15);">بانتظار المراجعة</span></td>
+                                    <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('يوسف أحمد')">مراجعة</button></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600;">سارة محمد</td>
+                                    <td>الأمس</td>
+                                    <td><span class="badge-dynamic badge-ready">92%</span></td>
+                                    <td><span class="badge-dynamic badge-ready">معتمد</span></td>
+                                    <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('سارة محمد')">عرض</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="analysis-detail-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">تفاصيل التحليل: <span id="analysis-patient-name" style="color: var(--color-primary);"></span></h2>
+                        <button class="btn btn-outline" onclick="showSection('review-list-section')">العودة للقائمة ➔</button>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div class="card" style="text-align: center;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--color-text-main);">صورة الرسم</h3>
+                            <div style="height: 350px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 2px dashed var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--color-text-muted);">[الصورة المرفوعة]</div>
+                        </div>
+                        <div class="card" style="display: flex; flex-direction: column;">
+                            <h3 style="margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; font-size: 1.1rem;">ملخص الذكاء الاصطناعي</h3>
+                            <p style="font-size: 0.95rem; color: var(--color-text-main); margin-bottom: 16px;">الرسم يظهر تركيزاً كبيراً في التفاصيل الدقيقة مما قد يشير إلى مستوى عالٍ من التركيز. الألوان المستخدمة دافئة وتميل للإيجابية.</p>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                                <div style="background: rgba(117,154,114,0.05); padding: 12px; border-radius: 8px;">
+                                    <strong style="color: var(--color-primary); display: block; font-size: 0.9rem;">المؤشرات السلوكية</strong>
+                                    <span style="font-size: 0.85rem; color: var(--color-text-main);">انتباه جيد للتفاصيل</span>
+                                </div>
+                                <div style="background: rgba(144,180,242,0.05); padding: 12px; border-radius: 8px;">
+                                    <strong style="color: var(--color-secondary); display: block; font-size: 0.9rem;">المؤشرات العاطفية</strong>
+                                    <span style="font-size: 0.85rem; color: var(--color-text-main);">استقرار عاطفي ملحوظ</span>
+                                </div>
+                            </div>
+
+                            <label class="form-label" style="margin-top: auto;">ملاحظات الطبيب (تظهر في التقرير):</label>
+                            <textarea class="form-control" rows="3" placeholder="أضف ملاحظاتك أو عدّل على استنتاج الذكاء الاصطناعي..."></textarea>
+                            
+                            <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                                <button class="btn btn-primary" style="flex: 1;" onclick="alert('تم الاعتماد'); showSection('review-list-section')">اعتماد النتيجة</button>
+                                <button class="btn btn-outline" style="flex: 1; color: #B7791F; border-color: #B7791F;" onclick="alert('تم طلب تعديل'); showSection('review-list-section')">يطلب تعديل</button>
+                                <button class="btn btn-danger" onclick="alert('تم الرفض'); showSection('review-list-section')">رفض</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 4. Reports Section -->
+                <!-- ============================================== -->
+                <div id="reports-list-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">التقارير الطبية</h2>
+                    </div>
+                    
+                    <div class="card" style="padding: 0; overflow-x: auto;">
+                        <table class="table-custom">
+                            <thead><tr><th>اسم الطفل</th><th>تاريخ الإنشاء</th><th>نوع التقرير</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: 600;">أحمد خالد</td>
+                                    <td>01 يوليو 2026</td>
+                                    <td>تطور دوري</td>
+                                    <td><span class="badge-dynamic badge-ready">جاهز للإرسال</span></td>
+                                    <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showReportDetail('أحمد خالد', 'ready')">إرسال لولي الأمر</button></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600;">سارة محمد</td>
+                                    <td>28 يونيو 2026</td>
+                                    <td>تقييم مبدئي</td>
+                                    <td><span class="badge-dynamic badge-sent">أُرسل لولي الأمر</span></td>
+                                    <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showReportDetail('سارة محمد', 'sent')">عرض التقرير</button></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600;">يوسف أحمد</td>
+                                    <td>اليوم</td>
+                                    <td>تحليل رسم</td>
+                                    <td><span class="badge-dynamic badge-edit">يحتاج تعديل</span></td>
+                                    <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; color: #E27D60; border-color: #E27D60;" onclick="showReportDetail('يوسف أحمد', 'edit')">تعديل التقرير</button></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600;">عمر سعيد</td>
+                                    <td>اليوم</td>
+                                    <td>تطور دوري</td>
+                                    <td><span class="badge-dynamic badge-draft">مسودة</span></td>
+                                    <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showReportDetail('عمر سعيد', 'draft')">استكمال التقرير</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="report-detail-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">تفاصيل التقرير</h2>
+                        <button class="btn btn-outline" onclick="showSection('reports-list-section')">العودة للتقارير ➔</button>
+                    </div>
+                    
+                    <div class="card" style="max-width: 800px; margin: 0 auto;">
+                        <div id="report-sent-badge" style="display: none; background: rgba(117,154,114,0.1); color: var(--color-primary); padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 24px; font-weight: bold;"> تم الإرسال لولي الأمر بنجاح في 28 يونيو 2026 - 10:30 ص</div>
+                        
+                        <div style="text-align: center; margin-bottom: 32px; border-bottom: 2px solid var(--glass-border); padding-bottom: 16px;">
+                            <h1 style="color: var(--color-primary); margin-bottom: 8px;">عيادة أمل</h1>
+                            <h3 style="color: var(--color-text-main); margin-bottom: 16px;">تقرير التطور السلوكي والطبي</h3>
+                            <div style="display: flex; justify-content: space-between; text-align: right; color: var(--color-text-muted); font-size: 0.95rem;">
+                                <div><p>اسم الطفل: <strong style="color: var(--color-text-main);" id="report-child-name"></strong></p><p>تاريخ التقرير: 01 يوليو 2026</p></div>
+                                <div><p>الطبيب المعالج: د. أحمد</p><p>نوع التقرير: تطور دوري</p></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 32px; font-size: 0.95rem; line-height: 1.8;">
+                            <p><strong>مقدمة:</strong> يوضح هذا التقرير حالة التطور للطفل خلال الجلسات الثلاث الأخيرة ومقارنتها بالتقييم المبدئي.</p>
+                            <p><strong>تحليل الرسوم:</strong> أظهرت الرسوم الأخيرة تحسناً في استخدام الألوان المتنوعة وتقليل الضغط على الورق.</p>
+                            <p><strong>التوصيات:</strong> الاستمرار في الجلسات الأسبوعية مع تعزيز الأنشطة البصرية في المنزل.</p>
+                        </div>
+                        
+                        <div id="report-actions-container" style="display: flex; gap: 12px; justify-content: center; border-top: 1px solid var(--glass-border); padding-top: 24px;">
+                            <button id="btn-rep-send" class="btn btn-primary" style="display: none;" onclick="alert('تم الإرسال بنجاح!'); showSection('reports-list-section')">إرسال لولي الأمر</button>
+                            <button id="btn-rep-edit" class="btn btn-outline" style="display: none;">تعديل التقرير</button>
+                            <button id="btn-rep-complete" class="btn btn-primary" style="display: none;">استكمال المسودة</button>
+                            <button class="btn btn-outline">تحميل PDF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 5. Appointments Section -->
+                <!-- ============================================== -->
+                <div id="appointments-list-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">المواعيد والجلسات</h2>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="card" style="padding: 20px; text-align: center; margin-bottom: 0;">
+                            <h3 style="font-size: 2.2rem; color: var(--color-primary); margin: 0 0 8px 0;">5</h3>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">مواعيد اليوم</p>
+                        </div>
+                        <div class="card" style="padding: 20px; text-align: center; margin-bottom: 0;">
+                            <h3 style="font-size: 2.2rem; color: var(--color-secondary); margin: 0 0 8px 0;">12</h3>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">المواعيد القادمة</p>
+                        </div>
+                        <div class="card" style="padding: 20px; text-align: center; margin-bottom: 0;">
+                            <h3 style="font-size: 2.2rem; color: #3B5E39; margin: 0 0 8px 0;">45</h3>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">الجلسات المكتملة</p>
+                        </div>
+                        <div class="card" style="padding: 20px; text-align: center; margin-bottom: 0;">
+                            <h3 style="font-size: 2.2rem; color: #E27D60; margin: 0 0 8px 0;">2</h3>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">الجلسات الملغاة</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 16px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <input type="text" class="form-control" placeholder="البحث باسم الطفل..." style="flex: 2; min-width: 200px; border-radius: 8px;">
+                        <input type="date" class="form-control" style="flex: 1; min-width: 150px; border-radius: 8px;">
+                        <select class="form-control" style="flex: 1; min-width: 150px; border-radius: 8px;">
+                            <option value="">حالة الموعد</option>
+                            <option value="pending">مجدول</option>
+                            <option value="completed">مكتمل</option>
+                        </select>
+                        <button class="btn btn-primary" style="padding: 10px 24px; border-radius: 8px;">بحث</button>
+                    </div>
+
+                    <div class="card" style="padding: 0; overflow-x: auto;">
+                        <table class="table-custom">
+                            <thead><tr><th>اسم الطفل</th><th>العمر</th><th>الوقت</th><th>المدة</th><th>نوع الجلسة</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: 600; color: var(--color-primary);">أحمد خالد</td>
+                                    <td>6 سنوات</td>
+                                    <td>اليوم 10:00 ص</td>
+                                    <td>45 دقيقة</td>
+                                    <td>متابعة سلوكية</td>
+                                    <td><span class="badge-dynamic" style="background: rgba(226,125,96,0.15); color: #E27D60;">يبدأ قريباً</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="showAppointmentDetail('أحمد خالد')">بدء الجلسة</button>
+                                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="showPatientProfile('أحمد خالد')">الملف</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; color: var(--color-text-main);">سارة محمد</td>
+                                    <td>8 سنوات</td>
+                                    <td>اليوم 11:30 ص</td>
+                                    <td>60 دقيقة</td>
+                                    <td>تقييم مبدئي</td>
+                                    <td><span class="badge-dynamic badge-draft">مجدول</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="showAppointmentDetail('سارة محمد')">التفاصيل</button>
+                                            <button class="btn-icon" title="إعادة جدولة"></button>
+                                            <button class="btn-icon" style="color: #E27D60;" title="إلغاء"></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="appointment-detail-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; background: #E27D60; animation: pulse 2s infinite;"></div>
+                            <h2 class="card-title" style="margin: 0;">مساحة عمل الجلسة (مباشر)</h2>
+                        </div>
+                        <button class="btn btn-outline" onclick="showSection('appointments-list-section')">حفظ كمسودة والعودة ➔</button>
+                    </div>
+
+                    <style>@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(226, 125, 96, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(226, 125, 96, 0); } 100% { box-shadow: 0 0 0 0 rgba(226, 125, 96, 0); } }</style>
+
+                    <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 24px;">
+                        <!-- Left Main Workspace -->
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <div class="card" style="margin-bottom: 0;">
+                                <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">توثيق الجلسة الحالية</h3>
+                                <textarea class="form-control" rows="10" placeholder="اكتب ملاحظاتك ومخرجات الجلسة هنا. هذا النص سيحفظ في ملف الطفل مباشرة..."></textarea>
+                                <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                    <button class="btn btn-primary" onclick="alert('تم إنهاء وتوثيق الجلسة'); showSection('appointments-list-section')">إنهاء الجلسة وحفظ السجل</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Info Sidebar -->
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <div class="card" style="margin-bottom: 0; padding: 20px;">
+                                <h3 style="font-size: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; margin-bottom: 12px;">بيانات الطفل</h3>
+                                <p style="margin: 0 0 4px 0; font-size: 0.9rem;"><strong>الاسم:</strong> أحمد خالد</p>
+                                <p style="margin: 0 0 4px 0; font-size: 0.9rem;"><strong>العمر:</strong> 6 سنوات</p>
+                                <p style="margin: 0 0 4px 0; font-size: 0.9rem;"><strong>مستوى التوحد:</strong> متوسط</p>
+                                <button class="btn btn-outline" style="width: 100%; margin-top: 12px; padding: 4px; font-size: 0.85rem;" onclick="showPatientProfile('أحمد خالد')">فتح الملف الطبي الكامل</button>
+                            </div>
+                            <div class="card" style="margin-bottom: 0; padding: 20px; background: rgba(144,180,242,0.05);">
+                                <h3 style="font-size: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; margin-bottom: 12px; color: var(--color-secondary);">ملاحظات الجلسة السابقة</h3>
+                                <p style="font-size: 0.85rem; color: var(--color-text-main); margin: 0; line-height: 1.6;">الطفل استجاب جيداً للبطاقات البصرية، يرجى التركيز اليوم على مهارات التواصل البصري وتجنب المشتتات الصوتية.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 6. Messages Section -->
+                <!-- ============================================== -->
+                <div id="messages-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">مركز الرسائل والتواصل</h2>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; height: 650px;">
+                        <!-- Chat List Pane -->
+                        <div class="card" style="padding: 0; display: flex; flex-direction: column; margin-bottom: 0; overflow: hidden;">
+                            <div style="padding: 16px; border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.5);">
+                                <input type="text" class="form-control" placeholder="بحث في المحادثات..." style="border-radius: 8px; margin-bottom: 12px; padding: 10px;">
+                                <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+                                    <button class="chat-filter active">الكل</button>
+                                    <button class="chat-filter">غير مقروءة</button>
+                                    <button class="chat-filter">تحتاج رد</button>
+                                </div>
+                            </div>
+                            <div id="doc-chat-list" style="overflow-y: auto; flex: 1;">
+                                <div style="padding: 24px; text-align: center; color: var(--color-text-muted);">جاري التحميل...</div>
+                            </div>
+                        </div>
+
+                        <!-- Active Chat Pane -->
+                        <div class="card" style="padding: 0; display: flex; flex-direction: column; margin-bottom: 0; overflow: hidden;">
+                            <div id="chat-header-empty" style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted);">
+                                <h3>يرجى اختيار محادثة من القائمة لعرض الرسائل.</h3>
+                            </div>
+                            
+                            <!-- Hidden until chat selected -->
+                            <div id="chat-active-area" style="display: none; flex-direction: column; height: 100%;">
+                                <!-- Chat Header with Child Info -->
+                                <div style="padding: 16px 24px; border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--color-text-main);" id="active-chat-parent-name">خالد عبدالله (أب)</h3>
+                                        <p style="margin: 0; font-size: 0.85rem; color: var(--color-primary); cursor: pointer;" onclick="showPatientProfile('أحمد خالد')">ولي أمر الطفل: <span id="active-chat-child-name">أحمد خالد</span> (اضغط لفتح الملف)</p>
+                                    </div>
+                                    <div style="text-align: left;">
+                                        <span class="badge-dynamic badge-ready">أقرب موعد: اليوم 10:00 ص</span>
+                                    </div>
+                                </div>
+
+                                <!-- Chat Messages Area -->
+                                <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 24px; background: rgba(0,0,0,0.01); display: flex; flex-direction: column;">
+                                    <!-- Populated by JS -->
+                                </div>
+
+                                <!-- Chat Input -->
+                                <div style="padding: 16px 24px; border-top: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); display: flex; gap: 12px; align-items: center;">
+                                    <button class="btn-icon" title="إرفاق ملف" style="padding: 8px; background: rgba(0,0,0,0.05); border-radius: 50%;"></button>
+                                    <button class="btn-icon" title="إرفاق تقرير طبي" style="padding: 8px; background: rgba(0,0,0,0.05); border-radius: 50%;"></button>
+                                    <textarea id="chat-message-input" class="form-control" rows="1" placeholder="اكتب رسالتك لولي الأمر هنا..." style="resize: none; flex: 1; border-radius: 20px; padding: 12px 16px;"></textarea>
+                                    <button class="btn btn-primary" style="border-radius: 20px; padding: 10px 24px;" onclick="sendMessage()">إرسال</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 7. Profile Section -->
+                <!-- ============================================== -->
+                <div id="profile-section" class="section-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 class="card-title" style="margin: 0;">الملف الشخصي للطبيب</h2>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                        
+                        <!-- Left Column (Wider) -->
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <!-- Card 1: Personal Info -->
+                            <div class="card" style="padding: 24px; margin-bottom: 0;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;">
+                                    <div style="display: flex; align-items: center; gap: 20px;">
+                                        <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--color-secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 600;">د</div>
+                                        <div>
+                                            <h3 id="doc-profile-name" style="margin: 0 0 6px 0; color: var(--color-text-main); font-size: 1.4rem;">د. أحمد عبدالله</h3>
+                                            <p style="margin: 0 0 6px 0; color: var(--color-text-muted); font-size: 0.95rem;">أخصائي تعديل سلوك وعلاج نفسي للأطفال</p>
+                                            <span class="badge-dynamic badge-ready">حساب نشط</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;">تعديل البيانات</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                                    <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">رقم الترخيص المهني</p><p style="margin: 0; font-weight: 500;">MED-2026-98765</p></div>
+                                    <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">سنوات الخبرة</p><p style="margin: 0; font-weight: 500;">8 سنوات</p></div>
+                                    <div><p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">تاريخ الانضمام لمنصة أمل</p><p style="margin: 0; font-weight: 500;">01 يناير 2026</p></div>
+                                </div>
+                            </div>
+
+                            <!-- Card 4: Activity Log -->
+                            <div class="card" style="padding: 24px; margin-bottom: 0;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 1.1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">سجل النشاط الأخير</h3>
+                                <div>
+                                    <div class="activity-item" style="border-right-color: var(--color-primary);">
+                                        <div style="display: flex; justify-content: space-between;"><strong style="font-size: 0.9rem;">اعتماد تقرير طبي</strong><span style="font-size: 0.8rem; color: var(--color-text-muted);">اليوم 10:45 ص</span></div>
+                                        <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">تم اعتماد وإرسال تقرير الطفل: زياد طارق.</p>
+                                    </div>
+                                    <div class="activity-item" style="border-right-color: #E27D60;">
+                                        <div style="display: flex; justify-content: space-between;"><strong style="font-size: 0.9rem;">مراجعة تحليل رسم</strong><span style="font-size: 0.8rem; color: var(--color-text-muted);">الأمس</span></div>
+                                        <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">مراجعة وتعديل نتيجة الذكاء الاصطناعي للطفل: سارة محمد.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column (Narrower) -->
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <!-- Card 2: Stats -->
+                            <div class="card" style="padding: 24px; margin-bottom: 0;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 1.1rem; color: var(--color-primary);">إحصائيات الإنجاز</h3>
+                                <div class="profile-stat-row"><span>المرضى الحاليين</span><span style="font-weight: bold;">24</span></div>
+                                <div class="profile-stat-row"><span>جلسات منجزة</span><span style="font-weight: bold;">342</span></div>
+                                <div class="profile-stat-row"><span>تحليلات تمت مراجعتها</span><span style="font-weight: bold;">156</span></div>
+                                <div class="profile-stat-row"><span>تقارير معتمدة</span><span style="font-weight: bold;">89</span></div>
+                                <div class="profile-stat-row" style="border-top: 2px solid var(--glass-border); padding-top: 12px; margin-top: 4px;">
+                                    <span style="color: #B7791F; font-weight: bold;">متوسط التقييم</span>
+                                    <span style="font-weight: bold; font-size: 1.1rem; color: #B7791F;"> 4.9/5</span>
+                                </div>
+                            </div>
+
+                            <!-- Card 3: Contact Data -->
+                            <div class="card" style="padding: 24px; margin-bottom: 0;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 1.1rem;">بيانات التواصل</h3>
+                                <div style="margin-bottom: 12px;">
+                                    <label class="form-label" style="font-size: 0.8rem;">البريد الإلكتروني</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="doc-profile-email" class="form-control" value="dr.ahmed@auraclinic.com" readonly style="padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.02);">
+                                        <button class="btn btn-outline" style="padding: 8px;" onclick="alert('تم النسخ')">نسخ</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.8rem;">رقم الجوال للعيادة</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="doc-profile-phone" class="form-control" value="+966 50 000 0000" readonly style="padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.02);">
+                                        <button class="btn btn-outline" style="padding: 8px;" onclick="alert('تم النسخ')">نسخ</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 5: Settings -->
+                            <div class="card" style="padding: 24px; margin-bottom: 0;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 1.1rem;">إعدادات الحساب</h3>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--glass-border);">
+                                    <span style="font-size: 0.95rem;">الإشعارات الفورية</span>
+                                    <div class="toggle-switch" onclick="this.classList.toggle('off')"></div>
+                                </div>
+                                <button class="btn btn-outline" style="width: 100%; margin-bottom: 12px; justify-content: center;">تغيير كلمة المرور</button>
+                                <button class="btn btn-outline" style="width: 100%; justify-content: center; color: var(--color-text-muted); border-color: var(--glass-border);">تغيير لغة العرض (EN)</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        function showSection(sectionId, element) {
+            const sections = document.querySelectorAll('.section-content');
+            sections.forEach(sec => sec.style.display = 'none');
+            
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) targetSection.style.display = 'block';
+            
+            if(element && element.tagName === 'A') {
+                const links = document.querySelectorAll('.sidebar-nav a');
+                links.forEach(link => link.classList.remove('active'));
+                element.classList.add('active');
+            } else if(sectionId) {
+                const links = document.querySelectorAll('.sidebar-nav a');
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(sectionId)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+        }
+
+        function showPatientProfile(name) {
+            document.getElementById('profile-patient-name').innerText = name;
+            showSection('patient-profile-section');
+        }
+
+        function showProfileTab(tabId, element) {
+            const tabs = document.querySelectorAll('.profile-tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            const btns = document.querySelectorAll('.profile-tab');
+            btns.forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function showAnalysisDetail(name) {
+            document.getElementById('analysis-patient-name').innerText = name;
+            showSection('analysis-detail-section');
+        }
+
+        function showReportDetail(name, status) {
+            document.getElementById('report-child-name').innerText = name;
+            const btnSend = document.getElementById('btn-rep-send');
+            const btnEdit = document.getElementById('btn-rep-edit');
+            const btnComp = document.getElementById('btn-rep-complete');
+            const badge = document.getElementById('report-sent-badge');
+            
+            btnSend.style.display = 'none';
+            btnEdit.style.display = 'none';
+            btnComp.style.display = 'none';
+            badge.style.display = 'none';
+
+            if(status === 'ready') {
+                btnSend.style.display = 'inline-block';
+                btnEdit.style.display = 'inline-block';
+            } else if(status === 'sent') {
+                badge.style.display = 'block';
+            } else if(status === 'edit') {
+                btnEdit.style.display = 'inline-block';
+            } else if(status === 'draft') {
+                btnComp.style.display = 'inline-block';
+            }
+            showSection('report-detail-section');
+        }
+
+        function showAppointmentDetail(name) {
+            showSection('appointment-detail-section');
+        }
+
+        // Old switchChat removed to fix SyntaxError
+        function renderDoctorDashboard() {
+            if (!doctorData) return;
+            
+            // 1. Populate stats
+            const statPatients = document.getElementById('stat-patients');
+            if (statPatients) statPatients.textContent = doctorData.patients?.length || 0;
+            
+            const statPending = document.getElementById('stat-pending');
+            if (statPending) statPending.textContent = doctorData.pendingAnalyses?.length || 0;
+            
+            const statAppts = document.getElementById('stat-appointments');
+            if (statAppts) statAppts.textContent = doctorData.appointments?.length || 0;
+
+            // 2. Populate Patients table
+            const patientsTbody = document.getElementById('doc-patients-tbody');
+            if (patientsTbody && doctorData.patients) {
+                if (doctorData.patients.length === 0) {
+                    patientsTbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">لا يوجد مرضى مسجلين</td></tr>';
+                } else {
+                    patientsTbody.innerHTML = doctorData.patients.map(p => `
+                        <tr>
+                            <td style="font-weight: 600; color: var(--color-primary);">${p.name}</td>
+                            <td>${p.age || '-'} سنوات</td>
+                            <td><span class="badge-dynamic" style="background: rgba(226,125,96,0.15); color: #E27D60;">${p.autism_level || '-'}</span></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td><span style="color: #3B5E39; font-weight: 600; font-size: 0.85rem;">نشط</span></td>
+                            <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showPatientProfile('${p.name}')">فتح الملف</button></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // 3. Populate AI Analyses Reviews table
+            const reviewsTbody = document.getElementById('doc-reviews-tbody');
+            if (reviewsTbody && doctorData.pendingAnalyses) {
+                if (doctorData.pendingAnalyses.length === 0) {
+                    reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد تحليلات بانتظار المراجعة</td></tr>';
+                } else {
+                    reviewsTbody.innerHTML = doctorData.pendingAnalyses.map(d => `
+                        <tr>
+                            <td style="font-weight: 600;">${d.child_name || 'طفل'}</td>
+                            <td>${d.upload_date}</td>
+                            <td><span class="badge-dynamic" style="background: rgba(144,180,242,0.15); color: #1D4ED8;">85%</span></td>
+                            <td><span class="badge-dynamic badge-edit" style="color: #B7791F; background: rgba(255,193,7,0.15);">بانتظار المراجعة</span></td>
+                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('${d.child_name}')">مراجعة</button></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // 4. Populate Reports table
+            const reportsTbody = document.getElementById('doc-reports-tbody');
+            if (reportsTbody && doctorData.reports) {
+                if (doctorData.reports.length === 0) {
+                    reportsTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد تقارير</td></tr>';
+                } else {
+                    reportsTbody.innerHTML = doctorData.reports.map(r => `
+                        <tr>
+                            <td>${r.date || '-'}</td>
+                            <td style="font-weight: 600;">${r.child_name || 'طفل'}</td>
+                            <td>-</td>
+                            <td><span class="badge-dynamic badge-ready">${r.status === 'pending' ? 'بانتظار المراجعة' : r.status}</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-icon" title="عرض" onclick="showReportDetail('${r.child_name}', '${r.status}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            // 6. Populate Messages List (Moved to loadConversations)
+
+            // 7. Populate Profile
+            if (doctorData.profile) {
+                const nameEl = document.getElementById('doc-profile-name');
+                const emailEl = document.getElementById('doc-profile-email');
+                const phoneEl = document.getElementById('doc-profile-phone');
+                if(nameEl) nameEl.textContent = doctorData.profile.name;
+                if(emailEl) emailEl.value = doctorData.profile.email;
+                if(phoneEl) phoneEl.value = doctorData.profile.phone || 'غير مسجل';
+            }
+        }
+        
+        async function loadConversations() {
+            try {
+                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+                const res = await fetch(API_BASE + `/api/users/${doctorId}/conversations`);
+                const data = await res.json();
+                conversations = data.conversations || [];
+                console.log("Conversations fetched:", conversations);
+                
+                const chatList = document.getElementById('doc-chat-list');
+                if (!chatList) return;
+                
+                if (conversations.length === 0) {
+                    chatList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-text-muted);">لا توجد محادثات حتى الآن</div>';
+                } else {
+                    chatList.innerHTML = conversations.map(c => `
+                        <div class="chat-item ${activeConversationId === c.id ? 'active' : ''}" onclick="switchChat(this, ${c.id}, '${c.parent_name}', '${c.child_name || '...'}', ${c.parent_id})">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                <h4 style="margin: 0; font-size: 0.95rem; color: var(--color-text-main);">${c.parent_name}</h4>
+                                <span style="font-size: 0.75rem; color: var(--color-text-muted);">${c.updated_at ? new Date(c.updated_at).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.last_message || ''}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                console.error("Failed to load conversations:", e);
+                const chatList = document.getElementById('doc-chat-list');
+                if (chatList) chatList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-text-muted);">Error fetching conversations: ' + e.message + '</div>';
+            }
+        }
+
+        async function switchChat(element, convId, parentName, childName, parentId) {
+            const items = document.querySelectorAll('.chat-item');
+            items.forEach(i => i.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            activeConversationId = convId;
+            activeParentId = parentId;
+
+            document.getElementById('chat-header-empty').style.display = 'none';
+            document.getElementById('chat-active-area').style.display = 'flex';
+            document.getElementById('active-chat-parent-name').innerText = parentName;
+            document.getElementById('active-chat-child-name').innerText = childName;
+            
+            const msgArea = document.getElementById('chat-messages-container');
+            msgArea.innerHTML = '<div style="text-align: center; color: var(--color-text-muted);">جاري تحميل الرسائل...</div>';
+            
+            if (!convId) return;
+            
+            try {
+                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+                const res = await fetch(API_BASE + `/api/conversations/${convId}/messages`);
+                const data = await res.json();
+                const msgs = data.messages || [];
+                console.log("Messages fetched:", msgs);
+                
+                msgArea.innerHTML = msgs.map(m => `
+                    <div class="chat-bubble ${m.sender_role === 'doctor' ? 'sent' : 'received'}">
+                        <p style="margin: 0;">${m.text}</p>
+                        <div style="font-size: 0.75rem; color: ${m.sender_role === 'doctor' ? 'rgba(255,255,255,0.8)' : 'var(--color-text-muted)'}; text-align: left; margin-top: 4px;">${m.time || ''}</div>
+                    </div>
+                `).join('');
+                msgArea.scrollTop = msgArea.scrollHeight;
+            } catch(e) {
+                console.error(e);
+                msgArea.innerHTML = '<div style="text-align: center; color: red;">فشل في تحميل الرسائل</div>';
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-message-input');
+            const text = input.value.trim();
+            if(!text || !activeParentId) return;
+            
+            try {
+                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+                const res = await fetch(API_BASE + '/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender_id: doctorId,
+                        receiver_id: activeParentId,
+                        sender_role: 'doctor',
+                        text: text
+                    })
+                });
+                const data = await res.json();
+                console.log("Insert message result:", data);
+                if (data.success) {
+                    input.value = '';
+                    await loadConversations();
+                    if (data.conversationId) {
+                        const c = conversations.find(x => x.id === data.conversationId);
+                        if(c) switchChat(null, c.id, c.parent_name, c.child_name || '...', c.parent_id);
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to send message:", e);
+            }
+        }
+
+        // Wrap initDoctorApp to auto-refresh UI on actions
+        async function refreshDoctorData() {
+            try {
+                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+                const res = await fetch(API_BASE + `/api/doctors/${doctorId}/data`);
+                doctorData = await res.json();
+                renderDoctorDashboard();
+            } catch(e) { console.error('Failed to refresh data:', e); }
+        }
+    </script>
 </body>
 </html>

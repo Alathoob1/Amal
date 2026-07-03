@@ -62,16 +62,24 @@ async function validateLogin(email, password) {
 }
 
 // ── Create a new user ──
-async function createUser({ name, email, password }) {
+async function createUser({ name, email, password, phone, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy }) {
     const db = await dbPromise;
     const existing = await findUserByEmail(email);
     if (existing) throw new Error('EMAIL_EXISTS');
 
     const hash = await bcrypt.hash(password, 10);
     const result = await db.run(
-        `INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')`,
-        [name, email, hash]
+        `INSERT INTO users (name, email, password, phone, role) VALUES (?, ?, ?, ?, 'user')`,
+        [name, email, hash, phone]
     );
+
+    const fullMedicalNotes = (childNotes || '') + (childTherapy ? '\nTherapy History: ' + childTherapy : '');
+
+    await db.run(
+        `INSERT INTO children (parent_id, name, age, gender, autism_level, communication_style, emotional_triggers, behavioral_history, medical_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [result.lastID, childName, childAge, childGender, childLevel, childCom, childTriggers, childHistory, fullMedicalNotes]
+    );
+
     return { id: result.lastID, name, email, role: 'user' };
 }
 

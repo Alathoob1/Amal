@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura - Autism Healthcare</title>
+    <title>أمل - رعاية التوحد</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            Aura
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            أمل
         </a>
         <div class="navbar-links">
             <a href="index.html" class="active" data-i18n="nav_home">Home</a>
@@ -20,24 +20,68 @@
         </div>
     </nav>
 
-    <div class="container content-wrapper">
-        <div class="card text-center" style="padding: 80px 24px; max-width: 800px; margin: 0 auto;">
-            <h1 style="color: var(--color-primary); font-size: 3rem; margin-bottom: 24px; line-height: 1.2;" data-i18n="welcome_title">A Safe Space for Growth</h1>
-            <p style="color: var(--color-text-muted); font-size: 1.15rem; max-width: 600px; margin: 0 auto 40px;" data-i18n="welcome_desc">
-                AI-assisted pediatric psychology platform designed with sensory safety and empathy at its core.
+    <section class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="margin-bottom: 24px;"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            <h1 style="color: var(--color-primary); font-size: 3.5rem; margin-bottom: 24px; line-height: 1.2; font-family: var(--font-display);">أمل: مساحة آمنة للنمو</h1>
+            <p style="color: var(--color-text-muted); font-size: 1.25rem; max-width: 600px; margin: 0 auto 40px; line-height: 1.8;">
+                منصة متطورة للطب النفسي للأطفال مدعومة بالذكاء الاصطناعي، صُممت لتوفير بيئة حسية آمنة ومليئة بالتعاطف والأمل لكل طفل.
             </p>
-            <a href="login.html" class="btn btn-primary" style="font-size: 1.1rem; padding: 14px 40px;" data-i18n="btn_get_started">Get Started</a>
+            <a href="login.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 16px 48px; border-radius: var(--border-radius-lg);">ابدأ الآن</a>
+            
+            <div class="alert-clinical" style="margin: 40px auto 0; background: rgba(253, 251, 247, 0.8);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>هذا التحليل المدعوم بالذكاء الاصطناعي يوفر مؤشرات سلوكية مساعدة ولا يُعد تشخيصاً سريرياً بديلاً عن الطبيب. جميع التقارير تخضع للمراجعة الطبية.</span>
+            </div>
         </div>
-        
-        <div class="alert-clinical" style="max-width: 800px; margin: 40px auto 0;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <span data-i18n="disclaimer">This AI analysis provides supportive behavioral indicators, not a clinical diagnosis. All reports are pending human medical review.</span>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+                    <h4 style="margin-bottom: 0; font-size: 1.5rem;">أمل</h4>
+                </div>
+                <p>نحن نؤمن بأن كل طفل يحمل أملاً لا حصر له. منصة "أمل" توفر الدعم الشامل والمستمر لأطفال التوحد من خلال متابعة دقيقة وتقارير موثوقة.</p>
+            </div>
+            <div class="footer-col">
+                <h4>روابط سريعة</h4>
+                <ul>
+                    <li><a href="index.html">الصفحة الرئيسية</a></li>
+                    <li><a href="login.html">تسجيل الدخول</a></li>
+                    <li><a href="#">الخدمات والميزات</a></li>
+                    <li><a href="#">من نحن</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>الدعم والمساعدة</h4>
+                <ul>
+                    <li><a href="#">الأسئلة الشائعة (FAQ)</a></li>
+                    <li><a href="#">شكاوي واقتراحات</a></li>
+                    <li><a href="#">سياسة الخصوصية</a></li>
+                    <li><a href="#">شروط الاستخدام</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>طرق للتواصل معنا</h4>
+                <ul>
+                    <li><a href="mailto:support@amal-care.com">support@amal-care.com</a></li>
+                    <li><a href="tel:+966123456789">+966 12 345 6789</a></li>
+                    <li><a href="#">الرياض، المملكة العربية السعودية</a></li>
+                </ul>
+            </div>
         </div>
-    </div>
+        <div class="footer-bottom">
+            &copy; 2026 منصة أمل للرعاية الصحية. جميع الحقوق محفوظة.
+        </div>
+    </footer>
 
     <script src="app.js"></script>
 </body>

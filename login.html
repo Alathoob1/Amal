@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Aura</title>
+    <title>تسجيل الدخول - أمل</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         .login-container {
@@ -40,8 +40,8 @@
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            Aura
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            أمل
         </a>
         <div class="navbar-links">
             <a href="index.html" data-i18n="nav_home">Home</a>
@@ -80,7 +80,7 @@
         <!-- View 2: Registration Card -->
         <div class="card register-container" id="registerCard" style="display: none;">
             <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 8px; font-size: 1.8rem;">Create Parent Account</h2>
-            <p class="text-center" style="color: var(--color-text-muted); margin-bottom: 24px;">Join Aura and register your child's clinical profile securely.</p>
+            <p class="text-center" style="color: var(--color-text-muted); margin-bottom: 24px;">Join Amal and register your child's clinical profile securely.</p>
             
             <div id="registerAlert" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
             
@@ -254,20 +254,33 @@
             const originalText = submitBtn.textContent;
             submitBtn.textContent = 'Checking... / جاري التحقق...';
 
-            // Helper: sets session and redirects
+            // Helper: sets session and redirects based on email domain
             function loginSuccess(role) {
-                localStorage.setItem('auraActiveUserEmail', email.toLowerCase());
+                const userEmail = email.toLowerCase();
+                localStorage.setItem('auraActiveUserEmail', userEmail);
                 showAlert(loginAlert, 'Login successful! Redirecting... / تم تسجيل الدخول بنجاح!', 'success');
+                
+                let portal = 'parent.html';
+                if (role === 'admin') {
+                    portal = 'admin.html';
+                } else if (role === 'doctor') {
+                    portal = 'doctor.html';
+                }
+
                 setTimeout(() => {
-                    if (role === 'admin') window.location.href = 'admin.html';
-                    else if (role === 'doctor') window.location.href = 'doctor.html';
-                    else window.location.href = 'parent.html';
+                    if (window.location.protocol === 'file:' || window.location.port !== '3000') {
+                        window.location.href = 'http://localhost:3000/' + portal;
+                    } else {
+                        window.location.href = portal;
+                    }
                 }, 900);
             }
 
-            // 1. Try real backend API
+            const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+            
+            // Try real backend API
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch(API_BASE + '/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -276,27 +289,17 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    localStorage.setItem('auraUserId', data.userId);
+                    localStorage.setItem('auraUserRole', data.role);
+                    
                     loginSuccess(data.role || 'parent');
                 } else {
                     showAlert(loginAlert, data.message || 'Invalid email or password. / البريد الإلكتروني أو كلمة المرور غير صحيحة.');
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 }
-                return; // Stop here if API answered (success or fail)
             } catch (err) {
-                console.log('Server API offline — using local credentials.');
-            }
-
-            // 2. Fallback: check auraRegisteredParents (the single source of truth)
-            const parents = JSON.parse(localStorage.getItem('auraRegisteredParents') || '[]');
-            const matched = parents.find(
-                p => p.email.toLowerCase() === email.toLowerCase() && p.password === password
-            );
-
-            if (matched) {
-                loginSuccess('parent');
-            } else {
-                showAlert(loginAlert, 'Invalid email or password. / البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+                showAlert(loginAlert, 'Server offline / الخادم غير متاح');
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             }
@@ -324,65 +327,30 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Registering... / جاري إنشاء الحساب...';
 
-            // 1. Check for duplicate email
-            const parents = JSON.parse(localStorage.getItem('auraRegisteredParents') || '[]');
-            if (parents.some(p => p.email.toLowerCase() === email)) {
-                showAlert(registerAlert, 'An account with this email already exists. Please sign in. / يوجد حساب بهذا البريد. يرجى تسجيل الدخول.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Account & Log In / إنشاء الحساب والدخول';
-                return;
-            }
-
-            // 2. Try backend registration (optional)
+            const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+            
+            // Try backend registration
             try {
-                await fetch('/api/register', {
+                const response = await fetch(API_BASE + '/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify({ name, email, password, phone, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy })
                 });
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('auraRegSuccess', '1');
+                    window.location.href = 'login.html';
+                } else {
+                    showAlert(registerAlert, data.message || 'Error creating account / خطأ في إنشاء الحساب');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account & Log In / إنشاء الحساب والدخول';
+                }
             } catch (err) {
-                console.log('Server offline — saving registration locally.');
+                showAlert(registerAlert, 'Server offline / الخادم غير متاح');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account & Log In / إنشاء الحساب والدخول';
             }
-
-            // 3. Build a full parent profile object matching the app.js schema
-            const newParent = {
-                parentName: name,
-                email:      email,
-                password:   password,
-                phone:      phone,
-                childProfile: {
-                    name:               childName,
-                    age:                childAge,
-                    gender:             childGender,
-                    autismLevel:        childLevel,
-                    communicationStyle: childCom     || 'Not specified yet / لم يتم تحديده',
-                    behavioralHistory:  childHistory || 'Not specified yet / لم يتم تحديده',
-                    emotionalTriggers:  childTriggers|| 'Not specified yet / لم يتم تحديده',
-                    medicalNotes:       childNotes   || 'Not specified yet / لم يتم تحديده',
-                    therapyHistory:     childTherapy || 'Not specified yet / لم يتم تحديده',
-                    medications:        'None / لا يوجد',
-                    allergies:          'None / لا يوجد',
-                    emergencyContact:   phone
-                },
-                drawings: [],
-                appointments: [
-                    { id: 'apt-init', doctor: 'Dr. Ahmed', date: '2026-07-08', time: '11:00 AM', type: 'Initial Consultation / المقابلة الاستكشافية', status: 'scheduled' }
-                ],
-                chatMessages: [
-                    { sender: 'doctor', text: `Welcome ${name}! I look forward to supporting ${childName}'s journey. Please upload your first drawing when ready.`, time: '10:00 AM', date: 'Today' }
-                ],
-                notifications: [
-                    { id: 'n-init', type: 'profile', text: `Welcome to Aura, ${name}! Child profile for ${childName} has been registered.`, unread: true, date: 'Just now' }
-                ]
-            };
-
-            // 4. Save to auraRegisteredParents (same key app.js reads)
-            parents.push(newParent);
-            localStorage.setItem('auraRegisteredParents', JSON.stringify(parents));
-
-            // 5. DO NOT auto-login. Redirect to login page with a success message flag.
-            localStorage.setItem('auraRegSuccess', '1');
-            window.location.href = 'login.html';
         }
 
         // Forgot Password Handler

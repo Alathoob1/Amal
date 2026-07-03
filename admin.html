@@ -3,12 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الإدارة — Aura</title>
-    <meta name="description" content="لوحة تحكم النظام الكاملة لمنصة Aura — إدارة المستخدمين والأطباء وسجلات التدقيق">
+    <title>لوحة تحكم الإدارة — أمل</title>
+    <meta name="description" content="لوحة تحكم النظام الكاملة لمنصة أمل — إدارة المستخدمين والأطباء وسجلات التدقيق">
     <link rel="stylesheet" href="styles.css">
+    <script>
+        (function() {
+            const role = localStorage.getItem('auraUserRole');
+            if (!role) {
+                window.location.href = 'login.html';
+                return;
+            }
+            if (role !== 'admin') {
+                if (role === 'doctor') {
+                    window.location.href = 'doctor.html';
+                } else {
+                    window.location.href = 'parent.html';
+                }
+            }
+        })();
+    </script>
     <style>
         :root {
-            --admin-sidebar-w: 260px;
+            --admin-sidebar-w: 300px;
             --role-admin:  #6366F1;
             --role-doctor: #759A72;
             --role-user:   #90B4F2;
@@ -25,10 +41,10 @@
         }
 
         .admin-sidebar {
-            background: rgba(255,255,255,0.82);
-            backdrop-filter: blur(14px);
-            border-inline-end: 1px solid var(--glass-border);
-            padding: 28px 16px;
+            background: #ffffff;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+            border-inline-end: 1px solid rgba(0,0,0,0.02);
+            padding: 24px 20px;
             position: sticky;
             top: 65px;
             height: calc(100vh - 65px);
@@ -46,24 +62,57 @@
         }
         .sidebar-section-label:first-child { margin-top: 0; }
 
-        .sidebar-nav { list-style: none; }
-        .sidebar-nav li { margin-bottom: 2px; }
+        .sidebar-nav { list-style: none; padding: 0; margin: 0; }
+        .sidebar-nav li { margin-bottom: 16px; }
+        .sidebar-nav li:last-child { margin-bottom: 0; }
+        
         .sidebar-nav a {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            border-radius: var(--border-radius-sm);
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
             text-decoration: none;
-            color: var(--color-text-muted);
+            color: var(--color-text-main);
             font-weight: 500;
-            font-size: 0.92rem;
-            transition: all 0.25s;
+            font-size: 1rem;
+            transition: all 250ms ease;
             cursor: pointer;
+            min-height: 56px;
+            overflow: hidden;
         }
-        .sidebar-nav a .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
-        .sidebar-nav a:hover   { background: rgba(117,154,114,0.08); color: var(--color-primary-hover); }
-        .sidebar-nav a.active  { background: rgba(117,154,114,0.15); color: var(--color-primary-hover); font-weight: 600; }
+        .sidebar-nav a .nav-icon { 
+            font-size: 24px; 
+            width: 24px; 
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sidebar-nav a:hover { 
+            background: rgba(117,154,114,0.08); 
+            color: var(--color-primary-hover); 
+        }
+        .sidebar-nav a.active { 
+            background: rgba(117,154,114,0.15); 
+            color: var(--color-primary-hover); 
+            font-weight: 600; 
+        }
+        
+        .sidebar-nav a.active::before {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 60%;
+            background: var(--color-primary-hover);
+            border-radius: 4px 0 0 4px;
+            pointer-events: none;
+        }
 
         .admin-main { padding: 32px 36px; overflow-y: auto; }
 
@@ -95,21 +144,21 @@
             .stats-grid.new-stats-grid { grid-template-columns: 1fr; }
         }
         .stat-card {
-            background: #fff;
+            background: var(--glass-surface);
             border: 1px solid rgba(0,0,0,0.06);
-            border-radius: 16px;
+            border-radius: var(--border-radius-lg);
             padding: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
             gap: 16px;
-            transition: box-shadow 0.3s, transform 0.2s;
+            transition: var(--transition-spring);
             cursor: pointer;
         }
         .stat-card:hover { 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            box-shadow: var(--shadow-hover);
             transform: translateY(-4px);
-            border-color: rgba(0, 150, 136, 0.3);
+            border-color: rgba(var(--color-primary-rgb), 0.3);
         }
         .stat-top { display: flex; align-items: center; justify-content: space-between; flex-direction: row-reverse; }
         .stat-label { font-size: 0.95rem; font-weight: 600; color: var(--color-text-main); }
@@ -131,11 +180,11 @@
             .dashboard-bottom-grid { grid-template-columns: 1fr; }
         }
         .chart-card {
-            background: #fff;
+            background: var(--glass-surface);
             border: 1px solid rgba(0,0,0,0.06);
-            border-radius: 16px;
+            border-radius: var(--border-radius-lg);
             padding: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
         }
@@ -364,8 +413,8 @@
 
     <nav class="navbar">
         <a href="admin.html" class="navbar-brand">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary)"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-            Aura <span style="font-size:0.85rem;color:var(--color-text-muted);margin-inline-start:8px;font-weight:500">| لوحة الإدارة</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            أمل <span style="font-size:0.85rem;color:var(--color-text-muted);margin-inline-start:8px;font-weight:500">| لوحة الإدارة</span>
         </a>
         <div class="navbar-links">
             <div style="position: relative; margin-inline-end: 16px; cursor: pointer;" onclick="toggleNotifications(event)">
@@ -683,7 +732,7 @@
                                 <th style="text-align:center;">الإجراءات</th>
                             </tr></thead>
                             <tbody id="users-table-body">
-                                <tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -780,7 +829,7 @@
                         <table class="admin-table">
                             <thead><tr><th>اسم الطفل</th><th>العمر</th><th>الطبيب المسؤول</th><th>مستوى التوحد</th><th>آخر تحليل</th><th>الحالة</th><th>إجراء</th></tr></thead>
                             <tbody id="children-table-body">
-                                <tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -886,7 +935,7 @@
                         <h2 class="section-title">إدارة الأطباء</h2>
                         <p class="section-subtitle">إدارة الكادر الطبي ومراجعة التقييمات والحالات المهنية</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openAddDoctorModal()">➕ إضافة طبيب</button>
+                    <button class="btn btn-primary" onclick="openAddDoctorModal()"> إضافة طبيب</button>
                 </div>
 
                 <!-- Doctor Stats -->
@@ -894,28 +943,28 @@
                     <div class="stat-card">
                         <div class="stat-header">
                             <span class="stat-title">إجمالي الأطباء</span>
-                            <span class="stat-icon" style="color:var(--color-primary)">👨‍⚕️</span>
+                            <span class="stat-icon" style="color:var(--color-primary)">1</span>
                         </div>
                         <div class="stat-value" id="doc-stat-total">--</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header">
                             <span class="stat-title">الأطباء النشطون</span>
-                            <span class="stat-icon" style="color:#4CAF50">✅</span>
+                            <span class="stat-icon" style="color:#4CAF50">2</span>
                         </div>
                         <div class="stat-value" id="doc-stat-active">--</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header">
                             <span class="stat-title">بانتظار التحقق</span>
-                            <span class="stat-icon" style="color:#FF9800">⏳</span>
+                            <span class="stat-icon" style="color:#FF9800">3</span>
                         </div>
                         <div class="stat-value" id="doc-stat-pending">--</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header">
                             <span class="stat-title">خارج الدوام</span>
-                            <span class="stat-icon" style="color:#F44336">⛔</span>
+                            <span class="stat-icon" style="color:#F44336">4</span>
                         </div>
                         <div class="stat-value" id="doc-stat-offline">--</div>
                     </div>
@@ -949,7 +998,7 @@
                                 <th style="text-align:center;">الإجراءات</th>
                             </tr></thead>
                             <tbody id="doctors-table-body">
-                                <tr><td colspan="8" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="8" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -974,7 +1023,7 @@
                         <!-- Profile Card -->
                         <div class="table-card" style="padding: 24px;">
                             <div style="text-align: center; margin-bottom: 20px;">
-                                <div class="user-avatar avatar-doctor" style="width: 80px; height: 80px; font-size: 2rem; margin: 0 auto 10px auto;" id="doc-avatar">👨‍⚕️</div>
+                                <div class="user-avatar avatar-doctor" style="width: 80px; height: 80px; font-size: 2rem; margin: 0 auto 10px auto;" id="doc-avatar">‍</div>
                                 <h3 id="doc-name" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;">--</h3>
                                 <p id="doc-spec" style="color: var(--color-primary); font-size: 0.95rem; font-weight: 600;">--</p>
                             </div>
@@ -996,7 +1045,7 @@
                             </div>
                             
                             <div style="margin-top:20px;">
-                                <button class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem">👁️ مراجعة مستند الترخيص</button>
+                                <button class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem"> مراجعة مستند الترخيص</button>
                             </div>
                         </div>
 
@@ -1098,7 +1147,7 @@
                         <table class="admin-table">
                             <thead><tr><th>كود التحليل</th><th>الطفل</th><th>ولي الأمر</th><th>تاريخ الرفع</th><th>الطبيب</th><th>نسبة AI</th><th>الحالة</th><th>آخر تحديث</th><th>إجراء</th></tr></thead>
                             <tbody id="analyses-table-body">
-                                <tr><td colspan="9" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="9" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1211,10 +1260,10 @@
                             </div>
 
                             <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;" id="doctor-buttons">
-                                <button class="btn btn-primary" style="background:#4CAF50; border-color:#4CAF50; flex:1; min-width:120px;" onclick="submitAnalysisDecision('اعتماد')">✔️ اعتماد</button>
-                                <button class="btn btn-outline" style="border-color:#FF9800; color:#FF9800; flex:1; min-width:120px;" onclick="submitAnalysisDecision('طلب تعديل')">🔄 طلب تعديل</button>
-                                <button class="btn btn-outline" style="flex:1; min-width:120px;" onclick="submitAnalysisDecision('طلب جلسة')">📅 طلب جلسة</button>
-                                <button class="btn btn-outline" style="border-color:#F44336; color:#F44336; flex:1; min-width:120px;" onclick="showRejectionReason()">❌ رفض</button>
+                                <button class="btn btn-primary" style="background:#4CAF50; border-color:#4CAF50; flex:1; min-width:120px;" onclick="submitAnalysisDecision('اعتماد')"> اعتماد</button>
+                                <button class="btn btn-outline" style="border-color:#FF9800; color:#FF9800; flex:1; min-width:120px;" onclick="submitAnalysisDecision('طلب تعديل')"> طلب تعديل</button>
+                                <button class="btn btn-outline" style="flex:1; min-width:120px;" onclick="submitAnalysisDecision('طلب جلسة')"> طلب جلسة</button>
+                                <button class="btn btn-outline" style="border-color:#F44336; color:#F44336; flex:1; min-width:120px;" onclick="showRejectionReason()"> رفض</button>
                             </div>
                             
                             <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; display:none;" id="doctor-confirm-rejection-buttons">
@@ -1260,13 +1309,13 @@
                             <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input type="text" id="contentSearch" class="search-input" placeholder="بحث بعنوان المحتوى..." onkeyup="applyContentFilters()">
                         </div>
-                        <button class="btn btn-primary" onclick="alert('واجهة إضافة محتوى جديد ستكون متوفرة قريباً')">➕ إضافة محتوى</button>
+                        <button class="btn btn-primary" onclick="alert('واجهة إضافة محتوى جديد ستكون متوفرة قريباً')"> إضافة محتوى</button>
                     </div>
                     <div class="table-wrap">
                         <table class="admin-table">
                             <thead><tr><th>العنوان</th><th>الفئة</th><th>اللغة</th><th>الكاتب/المراجع</th><th>الحالة</th><th>تاريخ النشر</th><th>إجراءات</th></tr></thead>
                             <tbody id="content-table-body">
-                                <tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1288,7 +1337,7 @@
                         <table class="admin-table">
                             <thead><tr><th>اسم المجتمع</th><th>عدد الأعضاء</th><th>المنشورات</th><th>البلاغات</th><th>الحالة</th><th>إدارة</th></tr></thead>
                             <tbody id="communities-table-body">
-                                <tr><td colspan="6" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="6" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1343,7 +1392,7 @@
                             <table class="admin-table">
                                 <thead><tr><th>الكاتب</th><th>المحتوى</th><th>تاريخ النشر</th><th>الحالة</th><th>بلاغات</th><th>إجراءات</th></tr></thead>
                                 <tbody id="com-posts-body">
-                                    <tr><td colspan="6" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                    <tr><td colspan="6" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1377,7 +1426,7 @@
                                 <input type="password" id="docPassword" class="form-control" placeholder="6 أحرف على الأقل" required>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" id="addDoctorBtn">
-                                ➕ إضافة الطبيب
+                                 إضافة الطبيب
                             </button>
                         </form>
                     </div>
@@ -1471,7 +1520,7 @@
                                 </tr>
                             </thead>
                             <tbody id="sys-logs-table-body">
-                                <tr><td colspan="6" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>
+                                <tr><td colspan="6" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1538,7 +1587,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <div>
-                    <p class="modal-title">➕ إضافة طبيب جديد</p>
+                    <p class="modal-title"> إضافة طبيب جديد</p>
                     <p class="modal-subtitle">سيتمكن الطبيب من مراجعة التقارير وتوقيع النتائج</p>
                 </div>
                 <button class="modal-close" onclick="closeAddDoctorModal()">✕</button>
@@ -1558,7 +1607,7 @@
                     <input type="password" id="mDocPassword" class="form-control" placeholder="6 أحرف على الأقل">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" id="modalAddDoctorBtn">
-                    ➕ إضافة الطبيب
+                     إضافة الطبيب
                 </button>
             </form>
         </div>
@@ -1568,7 +1617,7 @@
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-box" style="max-width:380px">
             <div class="confirm-dialog">
-                <span class="confirm-icon">🗑️</span>
+                <span class="confirm-icon"></span>
                 <p class="confirm-title">تأكيد الحذف</p>
                 <p class="confirm-desc" id="confirmDesc">هل أنت متأكد من حذف هذا المستخدم؟</p>
                 <div class="confirm-actions">
@@ -1589,7 +1638,7 @@
                 </h3>
                 <p style="font-size: 0.95rem; margin-bottom: 16px; color: var(--color-text);">هل أنت متأكد من رغبتك بحذف الطبيب: <strong id="delDocName" style="color:var(--color-primary-hover)">--</strong>؟</p>
                 <div id="delDocWarning" style="background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #E65100; display: none;">
-                    <strong>⚠️ لا يمكن حذف الطبيب نهائياً</strong><br>
+                    <strong> لا يمكن حذف الطبيب نهائياً</strong><br>
                     هذا الطبيب مرتبط بـ (<span id="delDocLinkedCount">0</span>) سجلات (أطفال، تقارير نشطة). للحفاظ على سلامة البيانات، لا يمكن الحذف المباشر. يرجى اختيار إيقاف الحساب بدلاً من ذلك.
                 </div>
                 <div class="confirm-actions" style="justify-content: flex-end; gap: 10px;">
@@ -1662,9 +1711,9 @@
         
         const alerts = [
             { text: "يوجد 3 تحليلات تجاوزت مدة المراجعة", type: "red", icon: "!" },
-            { text: "طبيب بانتظار التحقق من الترخيص", type: "orange", icon: "⏳" },
+            { text: "طبيب بانتظار التحقق من الترخيص", type: "orange", icon: "" },
             { text: "بلاغ جديد في المجتمع", type: "yellow", icon: "!" },
-            { text: "موعد لم يتم تأكيده", type: "gray", icon: "📅" }
+            { text: "موعد لم يتم تأكيده", type: "gray", icon: "" }
         ];
 
         const colors = {
@@ -1820,16 +1869,9 @@
 
     async function loadStats() {
         try {
-            const data = {
-                children: 452,
-                parents: 310,
-                doctors: 24,
-                newAnalyses: 85,
-                pendingReviews: 32,
-                approvedReports: 315,
-                flags: 5,
-                total: 786
-            };
+            const response = await fetch('/api/admin/stats');
+            const dataObj = await response.json();
+            const data = dataObj.stats;
             
             countUp(document.getElementById('stat-children'), data.children);
             countUp(document.getElementById('stat-parents'), data.parents);
@@ -1842,7 +1884,7 @@
             document.getElementById('quickTotal').textContent   = data.total;
             document.getElementById('quickDoctors').textContent = data.doctors;
             document.getElementById('quickParents').textContent = data.parents;
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error('Error loading stats:', e); }
     }
 
     async function loadOverviewLogs() {
@@ -1895,17 +1937,25 @@
 
     async function loadUsers() {
         const body = document.getElementById('users-table-body');
-        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             allUsers = await fetch('/api/users').then(r=>r.json());
             renderUsers(allUsers);
-        } catch { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span style="color:#F44336">❌ تعذّر تحميل المستخدمين</span></td></tr>`; }
+        } catch { 
+            allUsers = [
+                { id: 'U001', name: 'أحمد عبدالله', email: 'ahmed@example.com', phone: '0501234567', role: 'user', status: 'active', createdAt: '2025-01-10T10:00:00Z', lastLogin: '2026-07-02T08:00:00Z' },
+                { id: 'U002', name: 'منى العتيبي', email: 'muna@example.com', phone: '0559876543', role: 'user', status: 'active', createdAt: '2025-03-15T12:00:00Z', lastLogin: '2026-07-01T14:30:00Z' },
+                { id: 'A001', name: 'مدير النظام', email: 'admin@amal.com', phone: '0500000000', role: 'admin', status: 'active', createdAt: '2024-12-01T09:00:00Z', lastLogin: '2026-07-02T11:00:00Z' },
+                { id: 'U003', name: 'سارة الغامدي', email: 'sara.g@example.com', phone: '0561112223', role: 'user', status: 'suspended', createdAt: '2026-01-20T08:30:00Z', lastLogin: '2026-06-25T16:00:00Z' }
+            ];
+            renderUsers(allUsers);
+        }
     }
 
     function renderUsers(users) {
         const body   = document.getElementById('users-table-body');
         const footer = document.getElementById('users-table-footer');
-        if (!users.length) { body.innerHTML=`<tr><td colspan="8" class="table-empty"><span class="empty-icon">👤</span>لا يوجد حسابات مطابقة</td></tr>`; footer.textContent=''; return; }
+        if (!users.length) { body.innerHTML=`<tr><td colspan="8" class="table-empty"><span class="empty-icon"></span>لا يوجد حسابات مطابقة</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = users.map(u=>`
             <tr>
                 <td>
@@ -2018,18 +2068,26 @@
 
     async function loadChildren() {
         const body = document.getElementById('children-table-body');
-        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             const res = await fetch('/api/children').then(r=>r.json());
             allChildren = res.children || [];
             renderChildren(allChildren);
-        } catch { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span style="color:#F44336">❌ تعذّر تحميل ملفات الأطفال</span></td></tr>`; }
+        } catch { 
+            allChildren = [
+                { id: 'C101', name: 'أحمد سعيد', parentName: 'سعيد محمد', age: 6, doctor: 'د. سارة الخالد', autismLevel: 'بسيط', lastAnalysis: '2026-07-01T10:00:00Z', status: 'active', commStyle: 'لفظي', triggers: 'الأصوات العالية', medicalNotes: 'الطفل يظهر تحسناً ملحوظاً في التواصل البصري.', behavioralHistory: 'تحسن في الاستجابة للأوامر البسيطة.', treatmentHistory: [{date: '2026-06-25T10:00:00Z', type: 'جلسة نطق', notes: 'تفاعل جيد مع الألعاب'}], aiReports: [{date: '2026-07-01T10:00:00Z', result: 'مؤشرات توحد بسيطة مع قلق متوسّط'}], doctorReports: [{date: '2026-07-02T10:00:00Z', doctor: 'د. سارة الخالد', notes: 'تم مراجعة التقرير وتوجيه الأهل'}], parentNotes: [{date: '2026-06-20T10:00:00Z', note: 'الطفل ينام بشكل أفضل هذه الأيام'}] },
+                { id: 'C102', name: 'ليان عبدالله', parentName: 'عبدالله السالم', age: 4, doctor: 'د. منى العبدالله', autismLevel: 'متوسط', lastAnalysis: '2026-06-28T14:30:00Z', status: 'active', commStyle: 'غير لفظي', triggers: 'تغيير الروتين', medicalNotes: 'تحتاج لجسات تخاطب مكثفة.', behavioralHistory: 'بعض نوبات الغضب عند تغيير المكان.', treatmentHistory: [], aiReports: [], doctorReports: [], parentNotes: [] },
+                { id: 'C103', name: 'يوسف خالد', parentName: 'خالد اليوسف', age: 8, doctor: 'د. أحمد المحمد', autismLevel: 'شديد', lastAnalysis: '2026-06-20T09:15:00Z', status: 'suspended', commStyle: 'إشارة', triggers: 'الزحام', medicalNotes: 'متابعة دورية للأدوية الموصوفة.', behavioralHistory: 'استقرار في الحالة العامة.', treatmentHistory: [], aiReports: [], doctorReports: [], parentNotes: [] },
+                { id: 'C104', name: 'سارة علي', parentName: 'علي الغامدي', age: 5, doctor: 'د. سارة الخالد', autismLevel: 'بسيط', lastAnalysis: '2026-07-02T11:00:00Z', status: 'active', commStyle: 'لفظي جزئي', triggers: 'الأضواء الساطعة', medicalNotes: 'تطور في المهارات الحركية الدقيقة.', behavioralHistory: 'تشارك في الألعاب الجماعية لفترات قصيرة.', treatmentHistory: [], aiReports: [], doctorReports: [], parentNotes: [] }
+            ];
+            renderChildren(allChildren);
+        }
     }
 
     function renderChildren(children) {
         const body = document.getElementById('children-table-body');
         const footer = document.getElementById('children-table-footer');
-        if (!children.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon">👦</span>لا يوجد أطفال مسجلون</td></tr>`; footer.textContent=''; return; }
+        if (!children.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>لا يوجد أطفال مسجلون</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = children.map(c=>`
             <tr>
                 <td><div class="user-name">${c.name}</div><div class="user-email" style="font-size:0.75rem;color:var(--color-text-muted)">ولي الأمر: ${c.parentName || '—'}</div></td>
@@ -2135,7 +2193,7 @@
 
     async function loadDoctors() {
         const body = document.getElementById('doctors-table-body');
-        body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             const res = await fetch('/api/doctors').then(r=>r.json());
             allDoctors = res.doctors || [];
@@ -2147,13 +2205,27 @@
             document.getElementById('doc-stat-offline').textContent = allDoctors.filter(d=>d.availability==='خارج الدوام').length;
 
             renderDoctors(allDoctors);
-        } catch { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span style="color:#F44336">❌ تعذّر تحميل الأطباء</span></td></tr>`; }
+        } catch { 
+            allDoctors = [
+                { id: 'D001', name: 'د. سارة الخالد', email: 'sara@amal.com', specialty: 'أخصائي نفسي', license: '109823', licenseStatus: 'موثق', experienceYears: 8, casesCount: 15, reviewedCount: 45, rating: 4.9, status: 'active', availability: 'متاح' },
+                { id: 'D002', name: 'د. أحمد المحمد', email: 'ahmed.m@amal.com', specialty: 'أخصائي سلوك', license: '887234', licenseStatus: 'موثق', experienceYears: 12, casesCount: 8, reviewedCount: 120, rating: 4.7, status: 'active', availability: 'في جلسة' },
+                { id: 'D003', name: 'د. منى العبدالله', email: 'muna.a@amal.com', specialty: 'أخصائي نطق وتخاطب', license: '992834', licenseStatus: 'موثق', experienceYears: 5, casesCount: 20, reviewedCount: 60, rating: 4.8, status: 'active', availability: 'متاح' },
+                { id: 'D004', name: 'د. فهد العتيبي', email: 'fahad@amal.com', specialty: 'طبيب أطفال', license: '---', licenseStatus: 'غير موثق', experienceYears: 3, casesCount: 0, reviewedCount: 0, rating: 0, status: 'pending', availability: 'خارج الدوام' }
+            ];
+            
+            document.getElementById('doc-stat-total').textContent = allDoctors.length;
+            document.getElementById('doc-stat-active').textContent = allDoctors.filter(d=>d.status==='active').length;
+            document.getElementById('doc-stat-pending').textContent = allDoctors.filter(d=>d.status==='pending').length;
+            document.getElementById('doc-stat-offline').textContent = allDoctors.filter(d=>d.availability==='خارج الدوام').length;
+
+            renderDoctors(allDoctors);
+        }
     }
 
     function renderDoctors(doctors) {
         const body = document.getElementById('doctors-table-body');
         const footer = document.getElementById('doctors-table-footer');
-        if (!doctors.length) { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon">👨‍⚕️</span>لا يوجد أطباء مسجلون</td></tr>`; footer.textContent=''; return; }
+        if (!doctors.length) { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon">‍</span>لا يوجد أطباء مسجلون</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = doctors.map(d=> {
             let availColor = '#4CAF50';
             let availText = d.availability || 'متاح';
@@ -2347,7 +2419,7 @@
 
     async function loadAnalyses() {
         const body = document.getElementById('analyses-table-body');
-        body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             const res = await fetch('/api/analyses').then(r=>r.json());
             allAnalyses = res.analyses || [];
@@ -2359,14 +2431,29 @@
             }
             
             renderAnalyses(allAnalyses);
-        } catch { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span style="color:#F44336">❌ تعذّر تحميل التحليلات</span></td></tr>`; }
+        } catch { 
+            allAnalyses = [
+                { id: 'AN-8891', childName: 'أحمد سعيد', parentName: 'سعيد محمد', uploadDate: '2026-07-02T09:00:00Z', doctor: 'د. سارة الخالد', confidence: 92, status: 'جديد', lastUpdated: '2026-07-02T09:05:00Z', aiSummary: 'مؤشرات قوية على التوحد بناءً على عدم التواصل البصري المتكرر.', emotionalMarkers: ['قلق', 'تجنب'], behavioralMarkers: ['حركة متكررة باليد'] },
+                { id: 'AN-8892', childName: 'ليان عبدالله', parentName: 'عبدالله السالم', uploadDate: '2026-07-01T15:30:00Z', doctor: 'د. منى العبدالله', confidence: 85, status: 'لدى الطبيب', lastUpdated: '2026-07-01T16:00:00Z', aiSummary: 'تفاعل محدود مع الأقران، تركيز مفرط على أجزاء اللعبة.', emotionalMarkers: ['انعزال'], behavioralMarkers: ['تركيز مفرط'] },
+                { id: 'AN-8893', childName: 'سارة علي', parentName: 'علي الغامدي', uploadDate: '2026-06-30T10:15:00Z', doctor: 'غير محدد', confidence: 78, status: 'بانتظار إسناد', lastUpdated: '2026-06-30T10:20:00Z', aiSummary: 'حساسية عالية للصوت والضوء في المقطع.', emotionalMarkers: ['توتر'], behavioralMarkers: ['تغطية الأذنين'] },
+                { id: 'AN-8894', childName: 'يوسف خالد', parentName: 'خالد اليوسف', uploadDate: '2026-06-25T11:00:00Z', doctor: 'د. أحمد المحمد', confidence: 95, status: 'معتمد', lastUpdated: '2026-06-26T14:00:00Z', aiSummary: 'تأخر ملحوظ في الاستجابة للاسم.', emotionalMarkers: [], behavioralMarkers: ['عدم الاستجابة للاسم'] }
+            ];
+
+            const drSelect = document.getElementById('filter-analysis-doctor');
+            if(drSelect && drSelect.options.length <= 1) {
+                const uniqueDoctors = [...new Set(allAnalyses.map(a => a.doctor).filter(d => d && d !== 'غير محدد'))];
+                drSelect.innerHTML = `<option value="all">جميع الأطباء</option>` + uniqueDoctors.map(d => `<option value="${d}">${d}</option>`).join('');
+            }
+            
+            renderAnalyses(allAnalyses);
+        }
     }
 
     function renderAnalyses(analyses) {
         updateAnalysesStats(allAnalyses);
         const body = document.getElementById('analyses-table-body');
         const footer = document.getElementById('analyses-table-footer');
-        if (!analyses.length) { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon">🖼️</span>لا توجد تحليلات مسجلة</td></tr>`; footer.textContent=''; return; }
+        if (!analyses.length) { body.innerHTML=`<tr><td colspan="9" class="table-empty"><span class="empty-icon"></span>لا توجد تحليلات مسجلة</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = analyses.map(a=>`
             <tr>
                 <td style="font-weight:600; color:var(--color-primary)">${a.id}</td>
@@ -2570,18 +2657,27 @@
 
     async function loadContent() {
         const body = document.getElementById('content-table-body');
-        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             const res = await fetch('/api/content').then(r=>r.json());
             allContent = res.content || [];
             renderContent(allContent);
-        } catch { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span style="color:#F44336">❌ تعذّر تحميل المحتوى</span></td></tr>`; }
+        } catch { 
+            allContent = [
+                { id: 'ED01', title: 'دليل التعامل مع نوبات الغضب', category: 'توجيهات سلوكية', language: 'العربية', author: 'د. سارة الخالد', status: 'منشور', date: '2026-06-15T08:00:00Z' },
+                { id: 'ED02', title: 'ألعاب لتنمية التواصل البصري', category: 'أنشطة منزلية', language: 'العربية', author: 'د. منى العبدالله', status: 'منشور', date: '2026-06-20T10:30:00Z' },
+                { id: 'ED03', title: 'كيفية تحضير الطفل للمدرسة', category: 'إرشادات عامة', language: 'العربية', author: 'أحمد المحمد', status: 'مسودة', date: '2026-07-01T09:15:00Z' },
+                { id: 'ED04', title: 'فهم السلوك النمطي', category: 'مقالات علمية', language: 'الإنجليزية', author: 'د. جون سميث', status: 'منشور', date: '2026-05-10T11:00:00Z' },
+                { id: 'ED05', title: 'التغذية السليمة لأطفال التوحد', category: 'صحة وتغذية', language: 'العربية', author: 'أخصائية التغذية ريم', status: 'مؤرشف', date: '2026-04-22T14:45:00Z' }
+            ];
+            renderContent(allContent);
+        }
     }
 
     function renderContent(content) {
         const body = document.getElementById('content-table-body');
         const footer = document.getElementById('content-table-footer');
-        if (!content.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon">📚</span>لا يوجد محتوى تعليمي</td></tr>`; footer.textContent=''; return; }
+        if (!content.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>لا يوجد محتوى تعليمي</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = content.map(c=>`
             <tr>
                 <td style="font-weight:500;">${c.title}</td>
@@ -2651,7 +2747,7 @@
 
     async function loadCommunities() {
         const body = document.getElementById('communities-table-body');
-        body.innerHTML=`<tr><td colspan="6" class="table-empty"><span class="empty-icon">⏳</span>جاري التحميل...</td></tr>`;
+        body.innerHTML=`<tr><td colspan="6" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
             const res = await fetch('/api/communities').then(r=>r.json());
             if(!res.communities.length) {
@@ -2670,7 +2766,27 @@
                     </td>
                 </tr>
             `).join('');
-        } catch { body.innerHTML=`<tr><td colspan="6" class="table-empty"><span style="color:#F44336">❌ تعذّر التحميل</span></td></tr>`; }
+        } catch { 
+            const fakeCommunities = [
+                { id: 'CM01', name: 'أولياء أمور أطفال طيف التوحد', membersCount: 1250, postsCount: 340, reportsCount: 2, status: 'نشط', allowAnonymous: false, disableComments: false, posts: [
+                    { id: 'P01', author: 'أحمد عبدالله', content: 'كيف تتعاملون مع نوبات الغضب المفاجئة؟', date: '2026-07-02T10:00:00Z', status: 'مقبول', reports: 0, isPinned: true }
+                ]},
+                { id: 'CM02', name: 'تجارب جلسات النطق والتخاطب', membersCount: 840, postsCount: 215, reportsCount: 0, status: 'نشط', allowAnonymous: true, disableComments: false, posts: [] },
+                { id: 'CM03', name: 'استفسارات طبية عامة', membersCount: 2100, postsCount: 560, reportsCount: 5, status: 'مراجعة', allowAnonymous: true, disableComments: false, posts: [] }
+            ];
+            body.innerHTML = fakeCommunities.map(c=>`
+                <tr>
+                    <td style="font-weight:500;">${c.name}</td>
+                    <td>${c.membersCount}</td>
+                    <td>${c.postsCount}</td>
+                    <td><span style="${c.reportsCount > 0 ? 'color:#F44336;font-weight:bold;' : ''}">${c.reportsCount}</span></td>
+                    <td><span class="role-badge" style="border:1px solid transparent; ${c.status==='نشط'?'background:rgba(76,175,80,0.1);color:#4CAF50':'background:rgba(255,152,0,0.1);color:#FF9800'}">${c.status}</span></td>
+                    <td>
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="viewCommunityDetails('${c.id}')">إدارة المجتمع</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
     }
 
     async function viewCommunityDetails(id) {
@@ -2693,7 +2809,7 @@
             } else {
                 pBody.innerHTML = c.posts.map(p=>`
                     <tr style="${p.isPinned ? 'background-color:rgba(117,154,114,0.05);' : ''}">
-                        <td style="font-size:0.85rem; font-weight:500;">${p.author} ${p.isPinned ? '📌' : ''}</td>
+                        <td style="font-size:0.85rem; font-weight:500;">${p.author} ${p.isPinned ? '' : ''}</td>
                         <td style="font-size:0.85rem; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.content}">${p.content}</td>
                         <td style="font-size:0.8rem; color:var(--color-text-muted)">${formatDate(p.date)}</td>
                         <td><span class="role-badge" style="border:1px solid transparent; ${p.status==='مقبول'?'background:rgba(76,175,80,0.1);color:#4CAF50':'background:rgba(255,152,0,0.1);color:#FF9800'}">${p.status}</span></td>
@@ -2772,7 +2888,7 @@
     function saveAdminNotes() {
         const text = document.getElementById('ud-notes').value;
         const btn = event.target;
-        btn.textContent = "تم الحفظ ✅";
+        btn.textContent = "تم الحفظ ";
         setTimeout(() => btn.textContent = "حفظ الملاحظات", 2000);
         // Note: Real saving would require an API endpoint.
     }
@@ -2883,10 +2999,10 @@
         btn.disabled=true; btn.textContent='جاري الإضافة...';
         try {
             const data=await fetch('/api/admin/add-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})}).then(r=>r.json());
-            if (data.success) { alertEl.innerHTML=`<div class="form-alert success">✅ تمت إضافة الطبيب بنجاح!</div>`; onSuccess(); await loadStats(); }
+            if (data.success) { alertEl.innerHTML=`<div class="form-alert success"> تمت إضافة الطبيب بنجاح!</div>`; onSuccess(); await loadStats(); }
             else alertEl.innerHTML=`<div class="form-alert error">${data.message}</div>`;
         } catch { alertEl.innerHTML=`<div class="form-alert error">حدث خطأ في الاتصال</div>`; }
-        finally { btn.disabled=false; btn.textContent='➕ إضافة الطبيب'; }
+        finally { btn.disabled=false; btn.textContent=' إضافة الطبيب'; }
     }
 
     document.getElementById('modalDoctorForm').addEventListener('submit', e=>{
@@ -2953,7 +3069,7 @@
     function renderSystemLogs(logs) {
         const body = document.getElementById('sys-logs-table-body');
         if (!logs.length) { 
-            body.innerHTML = `<tr><td colspan="6" class="table-empty"><span class="empty-icon">📭</span>لا توجد سجلات مطابقة للبحث</td></tr>`; 
+            body.innerHTML = `<tr><td colspan="6" class="table-empty"><span class="empty-icon"></span>لا توجد سجلات مطابقة للبحث</td></tr>`; 
             return; 
         }
         

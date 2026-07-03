@@ -373,164 +373,108 @@ function toggleLanguage() {
   setLanguage(newLang);
 }
 
-// Default seed values for Sarah A. demo parent
-const defaultSarahProfile = {
-  parentName: "Sarah A.",
-  email: "parent@example.com",
-  password: "password",
-  phone: "+966 50 123 4567",
-  childProfile: {
-    name: "Leo M.",
-    age: 6,
-    gender: "Male / ذكر",
-    autismLevel: "Level 2 (Moderate ASD) / المستوى الثاني",
-    communicationStyle: "Uses speech tablets and gestures / يستخدم لوحات التعبير والتحفيز الإيمائي",
-    behavioralHistory: "Prone to sensory overloads in crowded environments / عرضة للتحسس الزائد بالمحيط المزدحم",
-    emotionalTriggers: "High-pitched noises, sudden bright lights / الأصوات العالية والأنوار المفاجئة",
-    medicalNotes: "Participates in sensory motor therapy twice a week / يخضع لجلسات علاج تكامل حسي حركي مرتين أسبوعياً",
-    therapyHistory: "6 months of Speech Therapy, occupational coaching / 6 أشهر تخاطب وعلاج وظيفي",
-    medications: "None / لا يوجد",
-    allergies: "Gluten sensitive / حساسية قمح خفيفة",
-    emergencyContact: "+966 50 123 4567"
-  },
-  drawings: [
-    {
-      id: "dr-01",
-      name: "Family Portrait / لوحة العائلة",
-      imageUrl: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400",
-      status: "approved",
-      uploadDate: "2026-06-25",
-      aiSummary: "The drawing uses high levels of primary yellow and orange, indicating high sensory arousal. Spatial layout shows isolated figures with minor overlap.",
-      emotional: "Expressing mild anxiety, isolation from central figures, but clean strokes show confidence.",
-      behavioral: "Focus on repetitive geometric structures in drawing boundaries, common with detail-oriented cognitive mapping.",
-      confidence: "88%",
-      doctorComments: "Approved AI observations. Suggest encouraging joint coloring exercises to foster connection.",
-      recommendations: "Continue sensory-safe visual play. Try modeling facial expressions on clay modeling sessions."
-    },
-    {
-      id: "dr-02",
-      name: "Tree in the Garden / شجرة الحديقة",
-      imageUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400",
-      status: "review",
-      uploadDate: "2026-07-01",
-      aiSummary: "AI Draft: Significant repetitive green strokes. Indicators of focused attention.",
-      emotional: "Calm state, high symmetry.",
-      behavioral: "Pattern repetitions.",
-      confidence: "91%",
-      doctorComments: "Pending clinician review.",
-      recommendations: "Pending final report approval."
-    }
-  ],
-  appointments: [
-    { id: "apt-1", doctor: "Dr. Ahmed", date: "2026-07-05", time: "10:30 AM", type: "Speech Therapy Followup", status: "scheduled" },
-    { id: "apt-2", doctor: "Dr. Ahmed", date: "2026-06-18", time: "09:00 AM", type: "Behavioral Assessment", status: "completed" }
-  ],
-  chatMessages: [
-    { sender: "doctor", text: "Hello Sarah, I reviewed Leo's latest drawing analysis report. The behavioral markers match his progress. We will discuss it on the next session.", time: "10:15 AM", date: "Yesterday" },
-    { sender: "parent", text: "Thank you Dr. Ahmed, I also noticed he has been calmer since our speech session last Tuesday.", time: "11:30 AM", date: "Yesterday" }
-  ],
-  notifications: [
-    { id: "n-1", type: "report", text: "Dr. Ahmed approved Leo's 'Family Portrait' drawing analysis report.", unread: true, date: "1 hour ago" },
-    { id: "n-2", type: "message", text: "New secure text message from Dr. Ahmed.", unread: true, date: "2 hours ago" }
-  ]
-};
-
-// ─── Community data helpers (shared across all accounts) ─────────────────────
-// Community groups are global (shared), but posts are per-parent.
-const DEFAULT_COMMUNITY_GROUPS = [
-  { id: "grp-general",    nameEn: "General Discussion",     nameAr: "المناقشة العامة",              descEn: "Connect with parents for general chat and peer advice.",                      descAr: "تواصل مع أولياء الأمور للمحادثة العامة والنصائح المشتركة.",           members: 241, moderators: ["Sarah A.", "Dr. Ahmed"], unread: 1,  pinnedEn: "Welcome to Aura Communities! Keep discussions supportive and sensory-safe.",          pinnedAr: "مرحباً بكم في مجتمعات أمان! يرجى الحفاظ على سرية المشاركات والدعم الحسي." },
-  { id: "grp-newly",     nameEn: "Newly Diagnosed",         nameAr: "المكتشف حديثاً",               descEn: "Support group for families navigating initial ASD steps.",                     descAr: "مجموعة دعم للعائلات التي تخطو خطواتها الأولى في التشخيص.",          members: 86,  moderators: ["Dr. Ahmed"],              unread: 0,  pinnedEn: "Check out the 'Understanding Autism Levels' handbook in the Resources tab.",          pinnedAr: "راجع دليل 'فهم مستويات التوحد' في قسم الموارد والكتيبات." },
-  { id: "grp-nonverbal", nameEn: "Non-Verbal Children",     nameAr: "الأطفال غير اللفظيين",         descEn: "AAC tools, sensory boards, and non-verbal expression advice.",                  descAr: "أدوات التواصل البديل AAC، اللوحات الحسية، ونصائح التعبير اللفظي والجسدي.",  members: 110, moderators: ["Dr. Ahmed", "Mona K."],  unread: 0,  pinnedEn: "Share your experience with speech tablet models here.",                               pinnedAr: "شارك تجربتك مع نماذج وأجهزة التابلت اللفظي هنا." },
-  { id: "grp-level1",    nameEn: "ASD Level 1",             nameAr: "توحد مستوى 1",                 descEn: "Support and advice for children with DSM-5 Level 1.",                          descAr: "دعم ونصائح للأطفال من ذوي التوحد المستوى الأول.",                   members: 92,  moderators: ["Sarah A."],              unread: 0,  pinnedEn: "School integration guide is available in Resources.",                               pinnedAr: "دليل الدمج المدرسي متاح الآن في مكتبة الموارد." },
-  { id: "grp-level2",    nameEn: "ASD Level 2",             nameAr: "توحد مستوى 2",                 descEn: "Support and advice for children with DSM-5 Level 2.",                          descAr: "دعم ونصائح للأطفال من ذوي التوحد المستوى الثاني.",                  members: 148, moderators: ["Dr. Ahmed"],              unread: 0,  pinnedEn: "Reminder: Track stimming triggers in the dashboard daily.",                          pinnedAr: "تذكير: يرجى تدوين محفزات الاستثارة الحسية في لوحة التحكم يومياً." },
-  { id: "grp-level3",    nameEn: "ASD Level 3",             nameAr: "توحد مستوى 3",                 descEn: "Support and advice for children with DSM-5 Level 3.",                          descAr: "دعم ونصائح للأطفال من ذوي التوحد المستوى الثالث.",                  members: 76,  moderators: ["Dr. Ahmed"],              unread: 0,  pinnedEn: "Occupational therapy session files uploaded.",                                      pinnedAr: "تم تحديث ورفع ملفات جلسات العلاج الوظيفي." },
-  { id: "grp-speech",    nameEn: "Speech Therapy",          nameAr: "علاج النطق والتخاطب",          descEn: "Exercises and ideas to encourage verbal communication.",                       descAr: "تمارين وأفكار لتشجيع التواصل اللفظي والنطق السليم.",               members: 165, moderators: ["Mona K.", "Dr. Ahmed"],  unread: 0,  pinnedEn: "Weekly coloring speech list updated.",                                             pinnedAr: "تم تحديث قائمة التلوين والنطق الأسبوعية للأطفال." },
-  { id: "grp-school",    nameEn: "School Support",          nameAr: "الدمج والدعم المدرسي",         descEn: "Navigating school transitions, IEPs, and classroom support.",                  descAr: "التكيف المدرسي، خطط التعليم الفردية IEP، وتسهيلات الفصول الدراسية.", members: 104, moderators: ["Sarah A."],              unread: 0,  pinnedEn: "IEP planning sheet is printable from Resources.",                                  pinnedAr: "ورقة عمل تخطيط الـ IEP قابلة للطباعة من الموارد." },
-  { id: "grp-nutrition", nameEn: "Nutrition",               nameAr: "التغذية والحمية الغذائية",     descEn: "Diets, gluten sensitivity, and feeding behavior adjustments.",                  descAr: "الأنظمة الغذائية، حساسية الجلوتين، وتعديل سلوكيات الطعام للأطفال.", members: 89,  moderators: ["Sarah A."],              unread: 0,  pinnedEn: "Gluten-free diet recommendations list.",                                           pinnedAr: "قائمة مقترحات الأطعمة الخالية من الجلوتين متوفرة." },
-  { id: "grp-home",      nameEn: "Home Activities",         nameAr: "الأنشطة المنزلية",             descEn: "Simple craft, drawing, and play exercises for sensory stimulation.",            descAr: "أنشطة يدوية بسيطة، رسم، وألعاب للمنزل تدعم التحفيز الحسي.",       members: 132, moderators: ["Dr. Ahmed"],              unread: 0,  pinnedEn: "Use clay modeling to express basic emotions.",                                     pinnedAr: "استخدم الصلصال والتجسيد للتعبير عن المشاعر الأساسية." },
-  { id: "grp-specialist",nameEn: "Ask a Specialist",        nameAr: "اسأل المختص",                 descEn: "Dedicated room monitored directly by clinical staff.",                         descAr: "مساحة مخصصة تخضع لمراقبة الطاقم الطبي المباشر للرد على الاستفسارات.", members: 210, moderators: ["Dr. Ahmed", "Mona K."],  unread: 0,  pinnedEn: "Response times are within 24 hours. For emergencies use the red CTA.",             pinnedAr: "الاستجابة للاستشارات خلال 24 ساعة. للطوارئ استخدم زر الدعم الأحمر." }
-];
-
-function getCommunityGroups() {
-  const stored = localStorage.getItem('auraCommunityGroups');
-  if (!stored) {
-    localStorage.setItem('auraCommunityGroups', JSON.stringify(DEFAULT_COMMUNITY_GROUPS));
-    return DEFAULT_COMMUNITY_GROUPS;
+// API Helpers
+async function apiFetch(endpoint, options = {}) {
+  try {
+    const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+    const res = await fetch(API_BASE + endpoint, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API Error:', err);
+    return null;
   }
-  return JSON.parse(stored);
 }
 
-function saveCommunityGroups(groups) {
-  localStorage.setItem('auraCommunityGroups', JSON.stringify(groups));
+function getUserId() {
+  return localStorage.getItem('auraUserId');
 }
 
-function getCommunityPosts() {
-  const stored = localStorage.getItem('auraCommunityPosts');
-  if (!stored) {
-    const seed = [{ id: "p-init", groupId: "grp-general", author: "Dr. Ahmed", anonymous: false, date: "Just now", text: "Welcome to the Aura communities support threads! Connect, share experiences, and support each other.", attachment: null, comments: [] }];
-    localStorage.setItem('auraCommunityPosts', JSON.stringify(seed));
-    return seed;
-  }
-  return JSON.parse(stored);
+function getUserRole() {
+  return localStorage.getItem('auraUserRole');
 }
 
-function saveCommunityPosts(posts) {
-  localStorage.setItem('auraCommunityPosts', JSON.stringify(posts));
-}
-// ─────────────────────────────────────────────────────────────────────────────
+let globalAuraData = null;
 
-// Seeding standard list of parents
-function getParentsList() {
-  let list = JSON.parse(localStorage.getItem('auraRegisteredParents') || '[]');
-  if (list.length === 0) {
-    list.push(defaultSarahProfile);
-    localStorage.setItem('auraRegisteredParents', JSON.stringify(list));
-  }
-  return list;
+async function fetchAndStoreLocalData() {
+  const userId = getUserId();
+  const role = getUserRole();
+  if (!userId || role !== 'parent') return null;
+  const data = await apiFetch(`/api/parents/${userId}/data`);
+  if (!data || data.error) return null;
+  
+  globalAuraData = {
+    parentName: data.profile.name,
+    email: data.profile.email,
+    phone: data.profile.phone,
+    childProfile: data.children.length > 0 ? {
+      id: data.children[0].id,
+      name: data.children[0].name,
+      age: data.children[0].age,
+      gender: data.children[0].gender,
+      autismLevel: data.children[0].autism_level,
+      communicationStyle: data.children[0].communication_style,
+      behavioralHistory: data.children[0].behavioral_history,
+      emotionalTriggers: data.children[0].emotional_triggers,
+      medicalNotes: data.children[0].medical_notes,
+      therapyHistory: data.children[0].therapy_history,
+      medications: data.children[0].medications,
+      allergies: data.children[0].allergies,
+      emergencyContact: data.children[0].emergency_contact,
+      doctor_id: data.children[0].doctor_id
+    } : { name: 'لم يتم تسجيل طفل' },
+    drawings: data.drawings.map(d => ({
+      id: d.id,
+      name: d.name,
+      imageUrl: d.image_url,
+      status: d.status,
+      uploadDate: d.upload_date,
+      aiSummary: d.ai_summary,
+      emotional: d.emotional,
+      behavioral: d.behavioral,
+      confidence: d.confidence,
+      doctorComments: d.doctor_comments,
+      recommendations: d.recommendations
+    })),
+    appointments: data.appointments.map(a => ({
+      id: a.id,
+      doctor: a.doctor_name,
+      date: a.date,
+      time: a.time,
+      type: a.type,
+      status: a.status
+    })),
+    chatMessages: data.chatMessages.map(m => ({
+      id: m.id,
+      sender: m.sender_id == userId ? 'parent' : 'doctor',
+      text: m.text,
+      time: m.time,
+      date: m.date
+    })),
+    notifications: data.notifications.map(n => ({
+      id: n.id,
+      type: n.type,
+      text: n.text,
+      unread: n.is_read === 0,
+      date: n.date
+    }))
+  };
+  return globalAuraData;
 }
 
-/**
- * Returns the full profile object for the currently logged-in parent.
- * Reads auraActiveUserEmail set by login.html at sign-in time.
- * If no match is found, returns the Sarah demo only when no email is stored
- * (first-time load without a session). In all other cases, returns null so
- * the caller can redirect to login.
- */
 function getLocalData() {
-  const parents = getParentsList();
-  const activeEmail = localStorage.getItem('auraActiveUserEmail');
-
-  // No session at all — default to demo for backward compat
-  if (!activeEmail) {
-    return defaultSarahProfile;
-  }
-
-  const activeParent = parents.find(p => p.email.toLowerCase() === activeEmail.toLowerCase());
-
-  // Account not found — this should not normally happen; return demo so page doesn't break
-  if (!activeParent) {
-    console.warn('[Aura] Active email', activeEmail, 'not found in registered parents. Using demo fallback.');
-    return defaultSarahProfile;
-  }
-
-  return activeParent;
+  return globalAuraData;
 }
 
-function saveLocalData(updatedParentData) {
-  const parents = getParentsList();
-  const activeEmail = localStorage.getItem('auraActiveUserEmail') || 'parent@example.com';
-  const idx = parents.findIndex(p => p.email.toLowerCase() === activeEmail.toLowerCase());
-  if (idx !== -1) {
-    parents[idx] = updatedParentData;
-  } else {
-    parents.push(updatedParentData);
-  }
-  localStorage.setItem('auraRegisteredParents', JSON.stringify(parents));
-}
-
-/** Called by the Logout button so the session is fully cleared. */
 function logoutParent() {
-  localStorage.removeItem('auraActiveUserEmail');
+  localStorage.removeItem('auraUserId');
+  localStorage.removeItem('auraUserRole');
   window.location.href = 'login.html';
 }
 
@@ -539,7 +483,7 @@ let activeGroupId = null;
 let postAttachedFile = null;
 
 // Navigation SPA Router
-function showView(viewId) {
+async function showView(viewId) {
   document.querySelectorAll('.view-section').forEach(view => {
     view.classList.remove('active');
   });
@@ -558,12 +502,18 @@ function showView(viewId) {
   });
 
   // Render view dynamic content
-  renderViewContent(viewId);
+  await renderViewContent(viewId);
 }
 
 // Dynamic rendering engine for SPA views
-function renderViewContent(viewId) {
+async function renderViewContent(viewId) {
+  if (!globalAuraData) {
+    await fetchAndStoreLocalData();
+  }
   const data = getLocalData();
+  
+  if (!data) return; // Wait until data is loaded
+  
   
   // Render navbar fields dynamically to avoid hardcoded user names
   const navNameEl = document.getElementById('parent-navbar-name');
@@ -607,8 +557,8 @@ function renderViewContent(viewId) {
           <h4 style="color: var(--color-text-main);">${nextApt.type}</h4>
           <p style="font-size: 0.9rem; margin-top: 4px;">With <strong>${nextApt.doctor}</strong></p>
           <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 0.85rem; color: var(--color-text-muted);">
-            <span>📅 ${nextApt.date}</span>
-            <span>⏰ ${nextApt.time}</span>
+            <span> ${nextApt.date}</span>
+            <span> ${nextApt.time}</span>
           </div>
         </div>
       `;
@@ -618,9 +568,9 @@ function renderViewContent(viewId) {
 
     // Recent Activity Feed
     const activities = [
-      { icon: "📄", text: "Approved analysis report for Family Portrait", time: "1 hour ago" },
-      { icon: "💬", text: "New message exchange with Dr. Ahmed", time: "Today" },
-      { icon: "🎨", text: "Uploaded new drawing 'Tree in the Garden'", time: "Today" }
+      { icon: "", text: "Approved analysis report for Family Portrait", time: "1 hour ago" },
+      { icon: "", text: "New message exchange with Dr. Ahmed", time: "Today" },
+      { icon: "", text: "Uploaded new drawing 'Tree in the Garden'", time: "Today" }
     ];
     document.getElementById('db-activity-feed').innerHTML = activities.map(act => `
       <li class="activity-item">
@@ -740,7 +690,7 @@ function renderUploadHistory() {
           <button class="btn btn-primary" style="margin-top: 10px;" onclick="openApprovedReport('${d.id}')">View Complete Approved Report</button>
         ` : `
           <div style="background: rgba(0,0,0,0.02); padding: 10px 14px; font-size: 0.85rem; border-radius: 6px; color: var(--color-text-muted);">
-            🔒 Reports and advice will unlock immediately once Dr. Ahmed confirms and signs off the clinical review.
+             Reports and advice will unlock immediately once Dr. Ahmed confirms and signs off the clinical review.
           </div>
         `}
       </div>
@@ -1098,102 +1048,98 @@ function rescheduleAppointment(id) {
 }
 
 // Chat Page Helpers
-function renderChatMessages() {
-  const data = getLocalData();
+async function renderChatMessages() {
+  const userId = getUserId();
+  const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
   const chatMessagesEl = document.getElementById('chat-history-container');
   if (!chatMessagesEl) return;
+  chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل الرسائل...</div>';
 
-  chatMessagesEl.innerHTML = data.chatMessages.map(msg => `
-    <div class="chat-bubble ${msg.sender === 'parent' ? 'sent' : 'received'}">
-      <div style="font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">
-        ${msg.sender === 'parent' ? (data.parentName || 'Sarah') : 'Dr. Ahmed'}
-      </div>
-      <p style="margin: 0; color: inherit;">${msg.text}</p>
-      ${msg.attachment ? `
-        <div class="chat-attachment">
-          <span>📎</span>
-          <a href="#" style="color: inherit; text-decoration: underline;" onclick="alert('File view matches HIPAA storage guidelines. Only accessible within medical tunnel.')">${msg.attachment.name}</a>
+  try {
+    let res = await fetch(API_BASE + `/api/users/${userId}/conversations`);
+    let data = await res.json();
+    const conversations = data.conversations || [];
+    
+    console.log("Conversations fetched:", conversations);
+    const conv = conversations[0]; 
+    if (!conv) {
+        chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لا توجد محادثات حتى الآن</div>';
+        return;
+    }
+    
+    window.activeConversationDoctorId = conv.doctor_id;
+    
+    res = await fetch(API_BASE + `/api/conversations/${conv.id}/messages`);
+    data = await res.json();
+    const msgs = data.messages || [];
+    console.log("Messages fetched:", msgs);
+    
+    chatMessagesEl.innerHTML = msgs.map(msg => `
+      <div class="chat-bubble ${msg.sender_role === 'parent' ? 'sent' : 'received'}">
+        <div style="font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">
+          ${msg.sender_name}
         </div>
-      ` : ''}
-      <div class="time">${msg.date} ${msg.time}</div>
-    </div>
-  `).join('');
-  
-  // Auto scroll to bottom
-  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        <p style="margin: 0; color: inherit;">${msg.text}</p>
+        <div class="time" style="font-size: 0.75rem; text-align: left; margin-top: 4px;">${msg.time || ''}</div>
+      </div>
+    `).join('');
+    
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  } catch (err) {
+    console.error("Failed to load chat:", err);
+    chatMessagesEl.innerHTML = '<div style="text-align: center; color: red; padding: 20px;">فشل في تحميل الرسائل</div>';
+  }
 }
 
-function sendChatMessage(e) {
+async function sendChatMessage(e) {
   e.preventDefault();
   const textInput = document.getElementById('chat-text-input');
   if (!textInput || !textInput.value.trim()) return;
 
-  const data = getLocalData();
-  const newMsg = {
-    sender: "parent",
-    text: textInput.value.trim(),
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: "Today"
-  };
-  data.chatMessages.push(newMsg);
-  
-  saveLocalData(data);
+  const userId = getUserId();
+  let docId = window.activeConversationDoctorId;
+  if (!docId) {
+      const data = getLocalData();
+      if (data && data.childProfile && data.childProfile.doctor_id) {
+          docId = data.childProfile.doctor_id;
+      }
+  }
+  if (!docId) {
+      alert('لا يوجد طبيب مخصص للطفل بعد. / No doctor assigned yet.');
+      return;
+  }
+
+  const text = textInput.value.trim();
   textInput.value = '';
-  renderChatMessages();
-
-  // Simulate Doctor reply in 3 seconds
-  setTimeout(() => {
-    const innerData = getLocalData();
-    innerData.chatMessages.push({
-      sender: "doctor",
-      text: "Thank you for the updates. I will keep this in mind during our visual progress review.",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: "Today"
-    });
-    // Add notification alert
-    innerData.notifications.unshift({
-      id: `n-${Date.now()}`,
-      type: "message",
-      text: "New secure text message from Dr. Ahmed.",
-      unread: true,
-      date: "Just now"
-    });
-    saveLocalData(innerData);
-    updateSidebarBadgeCount();
-    
-    const activeSec = document.querySelector('.view-section.active');
-    if (activeSec && activeSec.id === 'view-chat') {
-      renderChatMessages();
-    }
-  }, 3000);
+  
+  try {
+      const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
+      const res = await fetch(API_BASE + '/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              sender_id: userId,
+              receiver_id: docId,
+              sender_role: 'parent',
+              text: text
+          })
+      });
+      const result = await res.json();
+      console.log("Insert message result:", result);
+      if (result.success) {
+          await renderChatMessages();
+      }
+  } catch (err) {
+      console.error("Failed to send message:", err);
+  }
 }
 
-// Send Voice Note Simulator
 function sendVoiceNoteMock() {
-  const data = getLocalData();
-  data.chatMessages.push({
-    sender: "parent",
-    text: "🎤 Voice Note (0:14) / تسجيل صوتي",
-    attachment: { name: "voice_note_parent_2026-07-01.wav" },
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: "Today"
-  });
-  saveLocalData(data);
-  renderChatMessages();
+    alert('Voice notes are disabled during real-time backend testing.');
 }
 
-// Send File Simulator
 function triggerAttachmentMock(fileName) {
-  const data = getLocalData();
-  data.chatMessages.push({
-    sender: "parent",
-    text: `📁 Sent a document / تم إرسال ملف: ${fileName}`,
-    attachment: { name: fileName },
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: "Today"
-  });
-  saveLocalData(data);
-  renderChatMessages();
+    alert('Attachments are disabled during real-time backend testing.');
 }
 
 // WhatsApp Communities Style - Community view helpers
@@ -1227,7 +1173,7 @@ function renderCommunityPosts() {
           <div class="card" style="margin-bottom: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; justify-content: space-between; cursor: pointer; transition: all 0.3s;" onclick="enterCommunityGroup('${grp.id}')">
             <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
               <div style="width: 50px; height: 50px; border-radius: var(--border-radius-sm); background: rgba(117,154,114,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-                💬
+                
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
@@ -1266,20 +1212,20 @@ function renderCommunityPosts() {
       headerCard.innerHTML = `
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
           <div style="width: 60px; height: 60px; border-radius: var(--border-radius-sm); background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
-            💬
+            
           </div>
           <div>
             <h2 style="color: var(--color-primary); margin: 0; font-size:1.4rem;">${grpName}</h2>
             <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-top: 4px;">${grpDesc}</p>
             <div style="display: flex; gap: 16px; font-size: 0.82rem; color: var(--color-text-muted); margin-top: 6px;">
-              <span>👥 <strong>${activeGrp.members} members</strong></span>
-              <span>🛡️ Moderators: <strong>${activeGrp.moderators.join(', ')}</strong></span>
+              <span> <strong>${activeGrp.members} members</strong></span>
+              <span> Moderators: <strong>${activeGrp.moderators.join(', ')}</strong></span>
             </div>
           </div>
         </div>
         
         <div style="background: rgba(223, 164, 139, 0.08); border-left: 4px solid var(--color-accent); padding: 12px 16px; border-radius: var(--border-radius-sm); font-size: 0.9rem;">
-          <strong style="color: #8C5B48;">📌 Pinned Announcement:</strong>
+          <strong style="color: #8C5B48;"> Pinned Announcement:</strong>
           <span style="color: var(--color-text-main); margin-inline-start: 6px;">${grpPinned}</span>
         </div>
       `;
@@ -1378,13 +1324,13 @@ function renderGroupPostsList() {
       
       ${post.attachment ? `
         <div style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem;">
-          🖼️ <a href="#" style="color: var(--color-primary-hover); text-decoration: underline;" onclick="alert('Viewing attachment in community safe tunnel.')">${post.attachment.name}</a>
+           <a href="#" style="color: var(--color-primary-hover); text-decoration: underline;" onclick="alert('Viewing attachment in community safe tunnel.')">${post.attachment.name}</a>
         </div>
       ` : ''}
 
       <div class="post-actions">
-        <button class="post-action-btn" onclick="alert('Liked post / تم الإعجاب بالمنشور')">❤️ Like</button>
-        <button class="post-action-btn" onclick="toggleCommentsSection('${post.id}')">💬 Comments (${post.comments.length})</button>
+        <button class="post-action-btn" onclick="alert('Liked post / تم الإعجاب بالمنشور')"> Like</button>
+        <button class="post-action-btn" onclick="toggleCommentsSection('${post.id}')"> Comments (${post.comments.length})</button>
       </div>
 
       <div class="comment-section" id="comments-${post.id}" style="display: none;">
@@ -1493,10 +1439,10 @@ function renderEducationalResources() {
 
   // Static educational resources library
   const resourcesList = [
-    { title: "Understanding Autism Levels: A Guide for Parents", category: "Diagnosis", ageGroup: "All Ages", level: "All Levels", type: "Article (PDF)", icon: "📄", url: "#" },
-    { title: "Visual Schedules and Daily Transitions", category: "Home Activities", ageGroup: "Age 3-8", level: "Level 1 & 2", type: "Home Video", icon: "▶️", url: "#" },
-    { title: "Managing Sensory Meltdowns Safely", category: "Behavioral Support", ageGroup: "Age 5-12", level: "All Levels", type: "Handbook (PDF)", icon: "📥", url: "#" },
-    { title: "Speech Stimulus Games through Drawing", category: "Speech & Communication", ageGroup: "Age 4-9", level: "Level 2 & 3", type: "Home Activity Guide", icon: "🎯", url: "#" }
+    { title: "Understanding Autism Levels: A Guide for Parents", category: "Diagnosis", ageGroup: "All Ages", level: "All Levels", type: "Article (PDF)", icon: "", url: "#" },
+    { title: "Visual Schedules and Daily Transitions", category: "Home Activities", ageGroup: "Age 3-8", level: "Level 1 & 2", type: "Home Video", icon: "", url: "#" },
+    { title: "Managing Sensory Meltdowns Safely", category: "Behavioral Support", ageGroup: "Age 5-12", level: "All Levels", type: "Handbook (PDF)", icon: "", url: "#" },
+    { title: "Speech Stimulus Games through Drawing", category: "Speech & Communication", ageGroup: "Age 4-9", level: "Level 2 & 3", type: "Home Activity Guide", icon: "", url: "#" }
   ];
 
   // Filter selections
@@ -1549,7 +1495,7 @@ function renderNotificationsPage() {
       ${data.notifications.map(n => `
         <div class="notification-item ${n.unread ? 'unread' : ''}">
           <div style="font-size: 1.5rem;">
-            ${n.type === 'report' ? '📄' : n.type === 'message' ? '💬' : n.type === 'appointment' ? '📅' : '🔔'}
+            ${n.type === 'report' ? '' : n.type === 'message' ? '' : n.type === 'appointment' ? '' : ''}
           </div>
           <div style="flex: 1;">
             <p style="margin: 0; color: var(--color-text-main); font-size: 0.95rem;">${n.text}</p>

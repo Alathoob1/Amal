@@ -1,354 +1,405 @@
-// ================================================================
-//  server.js — Aura Backend (Express + SQLite Database)
-// ================================================================
 const express = require('express');
-const path    = require('path');
-const db      = require('./db');
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
 
-const app  = express();
-const PORT = 3000;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-// ── Middleware ──
 app.use(express.json());
-app.use(express.static(__dirname));
 
-// ── Initialize Database ──
-db.initDB().then(() => {
-    console.log('🗄️  Database initialized and ready.');
-    app.listen(PORT, () => {
-        console.log(`\n🚀 Aura Server running at: http://localhost:${PORT}`);
-        console.log(`🔐 Login  API : POST   http://localhost:${PORT}/api/login`);
-        console.log(`📝 Register  : POST   http://localhost:${PORT}/api/register`);
-        console.log(`👥 Users     : GET    http://localhost:${PORT}/api/users`);
-        console.log(`📊 Stats     : GET    http://localhost:${PORT}/api/stats`);
-        console.log(`📋 Logs      : GET    http://localhost:${PORT}/api/logs`);
-        console.log(`➕ Add Doctor: POST   http://localhost:${PORT}/api/admin/add-doctor`);
-        console.log(`🗑  Del User  : DELETE http://localhost:${PORT}/api/users/:id\n`);
+// Simple CORS middleware to allow requests from file://
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname)));
+
+let db;
+
+async function initDB() {
+    db = await open({
+        filename: path.join(__dirname, 'database.sqlite'),
+        driver: sqlite3.Database
     });
-}).catch(err => {
-    console.error('❌ Database initialization failed:', err);
-});
-
-// ================================================================
-//  AUTH ROUTES
-// ================================================================
-
-// POST /api/login
-app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'البريد وكلمة المرور مطلوبان' });
-    }
-
-    try {
-        const user = await db.validateLogin(email.trim(), password);
-        await db.addLog({ action: `تسجيل دخول: ${user.email}`, role: user.role, status: 'success' });
-        res.json({ success: true, role: user.role, name: user.name, email: user.email });
-    } catch (err) {
-        await db.addLog({ action: `محاولة دخول فاشلة: ${email}`, role: 'Unknown', status: 'warning' });
-        const msg =
-            err.message === 'USER_NOT_FOUND'  ? 'البريد الإلكتروني غير مسجل' :
-            err.message === 'WRONG_PASSWORD'  ? 'كلمة المرور غير صحيحة' :
-            'حدث خطأ، حاول مرة أخرى';
-        res.status(401).json({ success: false, message: msg });
-    }
-});
-
-// POST /api/register  (public users only)
-app.post('/api/register', async (req, res) => {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-        return res.status(400).json({ success: false, message: 'جميع الحقول مطلوبة' });
-    }
-    if (password.length < 6) {
-        return res.status(400).json({ success: false, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
-    }
-
-    // Block admin/doctor registration from the public form
-    const domain = email.split('@')[1]?.toLowerCase() || '';
-    if (domain === 'admin' || domain === 'doctor' || domain === 'doc' || domain === 'dr') {
-        return res.status(403).json({ success: false, message: 'لا يمكن إنشاء حسابات الأطباء أو المسؤولين من هنا' });
-    }
-
-    try {
-        const user = await db.createUser({ name, email: email.trim(), password });
-        await db.addLog({ action: `تسجيل حساب جديد: ${email}`, role: 'user', status: 'success' });
-        res.json({ success: true, message: 'تم إنشاء الحساب بنجاح!', role: user.role, name: user.name });
-    } catch (err) {
-        const msg = err.message === 'EMAIL_EXISTS'
-            ? 'هذا البريد الإلكتروني مسجل مسبقاً'
-            : 'حدث خطأ أثناء إنشاء الحساب';
-        res.status(400).json({ success: false, message: msg });
-    }
-});
-
-// ================================================================
-//  ADMIN ROUTES
-// ================================================================
-
-// GET /api/users
-app.get('/api/users', async (req, res) => {
-    try {
-        const users = await db.getAllUsers();
-        res.json(users);
-    } catch(err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/stats
-app.get('/api/stats', async (req, res) => {
-    try {
-        const stats = await db.getStats();
-        res.json(stats);
-    } catch(err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/logs
-app.get('/api/logs', async (req, res) => {
-    const limit = parseInt(req.query.limit) || 50;
-    try {
-        const logs = await db.getLogs(limit);
-        res.json(logs);
-    } catch(err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/admin/add-doctor
-app.post('/api/admin/add-doctor', async (req, res) => {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-        return res.status(400).json({ success: false, message: 'جميع الحقول مطلوبة' });
-    }
-    if (password.length < 6) {
-        return res.status(400).json({ success: false, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
-    }
-
-    try {
-        const doctor = await db.createDoctor({ name, email: email.trim(), password });
-        await db.addLog({ action: `إضافة طبيب جديد: ${email}`, role: 'admin', status: 'success', detail: name });
-        res.json({ success: true, message: 'تم إضافة الطبيب بنجاح!', doctor: { id: doctor.id, name: doctor.name, email: doctor.email, role: doctor.role } });
-    } catch (err) {
-        const msg = err.message === 'EMAIL_EXISTS'
-            ? 'هذا البريد الإلكتروني مسجل مسبقاً'
-            : 'حدث خطأ أثناء إضافة الطبيب';
-        res.status(400).json({ success: false, message: msg });
-    }
-});
-
-// DELETE /api/users/:id
-app.delete('/api/users/:id', async (req, res) => {
-    try {
-        const removed = await db.deleteUser(req.params.id);
-        await db.addLog({ action: `تم حذف مستخدم: ${removed.email}`, role: 'admin', status: 'warning', detail: removed.role });
-        res.json({ success: true, message: 'تم حذف المستخدم بنجاح' });
-    } catch (err) {
-        res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
-    }
-});
-
-// GET /api/users/:id
-app.get('/api/users/:id', async (req, res) => {
-    try {
-        const details = await db.getUserDetails(req.params.id);
-        if (!details) return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
-        res.json({ success: true, user: details });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// PUT /api/users/:id/status
-app.put('/api/users/:id/status', async (req, res) => {
-    const { status } = req.body;
-    if (!['active', 'suspended', 'pending'].includes(status)) {
-        return res.status(400).json({ success: false, message: 'حالة غير صالحة' });
-    }
     
+    // Initialize schema
+    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await db.exec(schema);
+    console.log('Database initialized.');
+}
+
+initDB().catch(console.error);
+
+// ----------------------------------------------------
+// AUTHENTICATION
+// ----------------------------------------------------
+app.post('/api/login', async (req, res) => {
     try {
-        const user = await db.updateUserStatus(req.params.id, status);
-        await db.addLog({ action: `تغيير حالة مستخدم: ${user.email} -> ${status}`, role: 'admin', status: 'success' });
-        res.json({ success: true, message: 'تم تحديث الحالة بنجاح', status: user.status });
+        const { email, password } = req.body;
+        const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+        }
+        
+        // Match password (handle plain text for seed data if needed, or bcrypt)
+        let isMatch = false;
+        if (user.password === password) {
+            isMatch = true; // For simple seed data
+        } else {
+            try { isMatch = await bcrypt.compare(password, user.password); } catch(e){}
+        }
+        
+        if (isMatch) {
+            res.json({ success: true, role: user.role, userId: user.id, name: user.name });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid email or password.' });
+        }
     } catch (err) {
-        res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// GET /api/children
-app.get('/api/children', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     try {
-        res.json({ success: true, children: await db.getAllChildren() });
+        const { name, email, password, phone, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy } = req.body;
+        
+        const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Email already exists.' });
+        }
+        
+        const hashedPw = await bcrypt.hash(password, 10);
+        const result = await db.run(
+            'INSERT INTO users (role, name, email, password, phone) VALUES (?, ?, ?, ?, ?)',
+            ['parent', name, email, hashedPw, phone]
+        );
+        const parentId = result.lastID;
+        
+        await db.run(
+            `INSERT INTO children 
+            (parent_id, name, age, gender, autism_level, communication_style, behavioral_history, emotional_triggers, medical_notes, therapy_history) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [parentId, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy]
+        );
+        
+        res.json({ success: true, message: 'Account created successfully', userId: parentId });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// GET /api/children/:id
-app.get('/api/children/:id', async (req, res) => {
+// ----------------------------------------------------
+// USERS API
+// ----------------------------------------------------
+app.get('/api/users', async (req, res) => {
+    const users = await db.all('SELECT id, role, name, email, phone, created_at as createdAt, "active" as status FROM users');
+    res.json(users);
+});
+
+app.get('/api/users/:id', async (req, res) => {
+    const user = await db.get('SELECT id, role, name, email, phone, created_at as createdAt, "active" as status FROM users WHERE id = ?', [req.params.id]);
+    res.json(user);
+});
+
+// ----------------------------------------------------
+// PARENT / CHILD DATA
+// ----------------------------------------------------
+app.get('/api/parents/:id/data', async (req, res) => {
     try {
-        const details = await db.getChildDetails(req.params.id);
-        if (!details) return res.status(404).json({ success: false, message: 'ملف الطفل غير موجود' });
-        res.json({ success: true, child: details });
+        const parentId = req.params.id;
+        const profile = await db.get('SELECT * FROM users WHERE id = ? AND role = "parent"', [parentId]);
+        if (!profile) return res.status(404).json({ error: 'Parent not found' });
+        
+        const children = await db.all('SELECT * FROM children WHERE parent_id = ?', [parentId]);
+        const drawings = await db.all('SELECT d.* FROM drawings d JOIN children c ON d.child_id = c.id WHERE c.parent_id = ? ORDER BY d.id DESC', [parentId]);
+        const appointments = await db.all('SELECT a.*, u.name as doctor_name FROM appointments a JOIN users u ON a.doctor_id = u.id WHERE a.parent_id = ? ORDER BY a.date DESC', [parentId]);
+        const notifications = await db.all('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC', [parentId]);
+        
+        res.json({
+            profile,
+            children,
+            drawings,
+            appointments,
+            notifications
+        });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// GET /api/doctors
+// ----------------------------------------------------
+// DOCTOR DATA
+// ----------------------------------------------------
 app.get('/api/doctors', async (req, res) => {
     try {
-        res.json({ success: true, doctors: await db.getAllDoctors() });
+        const doctors = await db.all('SELECT id, role, name, email, phone, created_at as joinDate, "active" as status, "متاح" as availability FROM users WHERE role = "doctor"');
+        res.json({ doctors });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// GET /api/doctors/:id
-app.get('/api/doctors/:id', async (req, res) => {
+app.get('/api/doctors/:id/data', async (req, res) => {
     try {
-        const details = await db.getDoctorDetails(req.params.id);
-        if (!details) return res.status(404).json({ success: false, message: 'الطبيب غير موجود' });
-        res.json({ success: true, doctor: details });
+        const doctorId = req.params.id;
+        const profile = await db.get('SELECT id, role, name, email, phone FROM users WHERE id = ?', [doctorId]);
+        if (!profile) return res.status(404).json({ error: 'Doctor not found' });
+        
+        const patients = await db.all('SELECT c.*, u.name as parent_name FROM children c JOIN users u ON c.parent_id = u.id WHERE c.doctor_id = ?', [doctorId]);
+        const pendingAnalyses = await db.all('SELECT d.*, c.name as child_name, c.age, c.gender FROM drawings d JOIN children c ON d.child_id = c.id WHERE d.status = "review" AND c.doctor_id = ?', [doctorId]);
+        const appointments = await db.all('SELECT a.*, c.name as child_name, u.name as parent_name FROM appointments a JOIN children c ON a.child_id = c.id JOIN users u ON a.parent_id = u.id WHERE a.doctor_id = ? ORDER BY a.date DESC', [doctorId]);
+        const reports = await db.all('SELECT r.*, c.name as child_name, c.age as child_age FROM reports r JOIN children c ON r.child_id = c.id WHERE r.doctor_id = ? ORDER BY r.id DESC', [doctorId]);
+        
+        res.json({
+            profile,
+            patients,
+            pendingAnalyses,
+            appointments,
+            reports
+        });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// GET /api/analyses
-app.get('/api/analyses', async (req, res) => {
-    try {
-        res.json({ success: true, analyses: await db.getAllAnalyses() });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// GET /api/analyses/:id
-app.get('/api/analyses/:id', async (req, res) => {
-    try {
-        const details = await db.getAnalysisDetails(req.params.id);
-        if (!details) return res.status(404).json({ success: false, message: 'التحليل غير موجود' });
-        res.json({ success: true, analysis: details });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// PUT /api/analyses/:id/decision
-app.put('/api/analyses/:id/decision', express.json(), async (req, res) => {
-    try {
-        const { decision, notes, doctorName, reason } = req.body;
-        const updated = await db.updateAnalysisDecision(req.params.id, doctorName || 'System Admin', decision, notes, reason);
-        if (updated) {
-            await db.addLog({ action: `تحديث حالة تحليل ${req.params.id} إلى ${decision}`, role: 'admin', status: 'success' });
-            res.json({ success: true });
-        } else {
-            res.status(404).json({ success: false, message: 'التحليل غير موجود' });
-        }
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// GET /api/content
-app.get('/api/content', async (req, res) => {
-    try {
-        res.json({ success: true, content: await db.getAllContent() });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// PUT /api/content/:id/status
-app.put('/api/content/:id/status', express.json(), async (req, res) => {
+// ----------------------------------------------------
+// REPORTS
+// ----------------------------------------------------
+app.put('/api/reports/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
-        const updated = await db.updateContentStatus(req.params.id, status);
-        if (updated) {
-            await db.addLog({ action: `تحديث حالة المحتوى ${req.params.id} إلى ${status}`, role: 'admin', status: 'success' });
-            res.json({ success: true });
+        await db.run('UPDATE reports SET status = ? WHERE id = ?', [status, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// MESSAGES & CONVERSATIONS
+// ----------------------------------------------------
+app.get('/api/users/:id/conversations', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await db.get('SELECT role FROM users WHERE id = ?', [userId]);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        let conversations;
+        if (user.role === 'doctor') {
+            conversations = await db.all(`
+                SELECT c.*, u.name as parent_name, ch.name as child_name 
+                FROM conversations c 
+                JOIN users u ON c.parent_id = u.id 
+                LEFT JOIN children ch ON c.child_id = ch.id 
+                WHERE c.doctor_id = ? 
+                ORDER BY c.updated_at DESC
+            `, [userId]);
+        } else if (user.role === 'parent') {
+            conversations = await db.all(`
+                SELECT c.*, u.name as doctor_name, ch.name as child_name 
+                FROM conversations c 
+                JOIN users u ON c.doctor_id = u.id 
+                LEFT JOIN children ch ON c.child_id = ch.id 
+                WHERE c.parent_id = ? 
+                ORDER BY c.updated_at DESC
+            `, [userId]);
         } else {
-            res.status(404).json({ success: false, message: 'المحتوى غير موجود' });
+            conversations = [];
         }
+        res.json({ conversations });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// DELETE /api/content/:id
-app.delete('/api/content/:id', async (req, res) => {
+app.get('/api/conversations/:id/messages', async (req, res) => {
     try {
-        const deleted = await db.deleteContent(req.params.id);
-        if (deleted) {
-            await db.addLog({ action: `حذف المحتوى ${req.params.id}`, role: 'admin', status: 'warning' });
-            res.json({ success: true });
+        const messages = await db.all('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.conversation_id = ? ORDER BY m.id ASC', [req.params.id]);
+        res.json({ messages });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/messages', async (req, res) => {
+    try {
+        const { sender_id, receiver_id, sender_role, text } = req.body;
+        const now = new Date();
+        const time = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+        const date = now.toISOString().split('T')[0];
+        
+        let doctor_id, parent_id;
+        if (sender_role === 'doctor') {
+            doctor_id = sender_id;
+            parent_id = receiver_id;
         } else {
-            res.status(404).json({ success: false, message: 'المحتوى غير موجود' });
+            doctor_id = receiver_id;
+            parent_id = sender_id;
         }
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// GET /api/communities
-app.get('/api/communities', async (req, res) => {
-    try {
-        res.json({ success: true, communities: await db.getAllCommunities() });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// GET /api/communities/:id
-app.get('/api/communities/:id', async (req, res) => {
-    try {
-        const details = await db.getCommunityDetails(req.params.id);
-        if (!details) return res.status(404).json({ success: false, message: 'المجتمع غير موجود' });
-        res.json({ success: true, community: details });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
-    }
-});
-
-// PUT /api/communities/:id/settings
-app.put('/api/communities/:id/settings', express.json(), async (req, res) => {
-    try {
-        const { allowAnonymous, disableComments } = req.body;
-        const updated = await db.updateCommunitySettings(req.params.id, allowAnonymous, disableComments);
-        if (updated) {
-            await db.addLog({ action: `تحديث إعدادات مجتمع ${req.params.id}`, role: 'admin', status: 'success' });
-            res.json({ success: true });
+        
+        let conv = await db.get('SELECT id FROM conversations WHERE doctor_id = ? AND parent_id = ?', [doctor_id, parent_id]);
+        if (!conv) {
+            const child = await db.get('SELECT id FROM children WHERE parent_id = ? AND doctor_id = ? LIMIT 1', [parent_id, doctor_id]) || await db.get('SELECT id FROM children WHERE parent_id = ? LIMIT 1', [parent_id]);
+            const child_id = child ? child.id : null;
+            const convRes = await db.run('INSERT INTO conversations (doctor_id, parent_id, child_id, last_message) VALUES (?, ?, ?, ?)', [doctor_id, parent_id, child_id, text]);
+            conv = { id: convRes.lastID };
         } else {
-            res.status(404).json({ success: false, message: 'المجتمع غير موجود' });
+            await db.run('UPDATE conversations SET last_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [text, conv.id]);
         }
+        
+        const result = await db.run(
+            'INSERT INTO messages (conversation_id, sender_id, sender_role, text, time, date) VALUES (?, ?, ?, ?, ?, ?)',
+            [conv.id, sender_id, sender_role, text, time, date]
+        );
+        res.json({ success: true, messageId: result.lastID, conversationId: conv.id });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// PUT /api/communities/:id/posts/:postId/status
-app.put('/api/communities/:id/posts/:postId/status', express.json(), async (req, res) => {
+// ----------------------------------------------------
+// PROFILE
+// ----------------------------------------------------
+app.put('/api/users/:id/profile', async (req, res) => {
     try {
-        const { action } = req.body;
-        const updated = await db.updatePostStatus(req.params.id, req.params.postId, action);
-        if (updated) {
-            await db.addLog({ action: `تحديث حالة منشور ${req.params.postId} - ${action}`, role: 'admin', status: 'success' });
-            res.json({ success: true });
+        const { name, email, phone, password } = req.body;
+        if (password) {
+            const hashedPw = await bcrypt.hash(password, 10);
+            await db.run('UPDATE users SET name = ?, email = ?, phone = ?, password = ? WHERE id = ?', [name, email, phone, hashedPw, req.params.id]);
         } else {
-            res.status(404).json({ success: false, message: 'المنشور غير موجود' });
+            await db.run('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?', [name, email, phone, req.params.id]);
         }
+        res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// ── Fallback → index.html ──
-app.use((req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// ----------------------------------------------------
+// ADMIN DATA
+// ----------------------------------------------------
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const parents = await db.get('SELECT COUNT(*) as count FROM users WHERE role = "parent"');
+        const doctors = await db.get('SELECT COUNT(*) as count FROM users WHERE role = "doctor"');
+        const children = await db.get('SELECT COUNT(*) as count FROM children');
+        const newAnalyses = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "analyzing"');
+        const pendingReviews = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "review"');
+        const approvedReports = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "approved"');
+        const flags = await db.get('SELECT COUNT(*) as count FROM community_reports WHERE status = "pending"');
+        
+        const communityReports = await db.all('SELECT r.*, u.name as user_name, g.name_ar as group_name FROM community_reports r JOIN users u ON r.user_id = u.id LEFT JOIN community_groups g ON r.group_id = g.id ORDER BY r.id DESC LIMIT 20');
+        
+        res.json({
+            stats: {
+                parents: parents.count,
+                doctors: doctors.count,
+                children: children.count,
+                newAnalyses: newAnalyses.count,
+                pendingReviews: pendingReviews.count,
+                approvedReports: approvedReports.count,
+                flags: flags.count,
+                total: parents.count + doctors.count + children.count
+            },
+            communityReports
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// DRAWINGS / AI ANALYSES
+// ----------------------------------------------------
+app.post('/api/drawings', async (req, res) => {
+    try {
+        const { child_id, name, image_url } = req.body;
+        const result = await db.run(
+            'INSERT INTO drawings (child_id, name, image_url, status, upload_date) VALUES (?, ?, ?, "analyzing", date("now"))',
+            [child_id, name, image_url]
+        );
+        res.json({ success: true, drawingId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/drawings/:id/review', async (req, res) => {
+    try {
+        const { status, doctor_comments, recommendations } = req.body;
+        await db.run(
+            'UPDATE drawings SET status = ?, doctor_comments = ?, recommendations = ? WHERE id = ?',
+            [status, doctor_comments, recommendations, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// APPOINTMENTS
+// ----------------------------------------------------
+app.post('/api/appointments', async (req, res) => {
+    try {
+        const { parent_id, doctor_id, child_id, date, time, type } = req.body;
+        const result = await db.run(
+            'INSERT INTO appointments (parent_id, doctor_id, child_id, date, time, type) VALUES (?, ?, ?, ?, ?, ?)',
+            [parent_id, doctor_id, child_id, date, time, type]
+        );
+        res.json({ success: true, appointmentId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/appointments/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        await db.run('UPDATE appointments SET status = ? WHERE id = ?', [status, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// COMMUNITY
+// ----------------------------------------------------
+app.get('/api/community/groups', async (req, res) => {
+    const groups = await db.all('SELECT * FROM community_groups');
+    res.json(groups);
+});
+
+// ----------------------------------------------------
+// LOGS
+// ----------------------------------------------------
+app.get('/api/logs', async (req, res) => {
+    try {
+        const notifs = await db.all('SELECT * FROM notifications ORDER BY id DESC LIMIT 10');
+        const logs = notifs.map(n => ({
+            id: n.id,
+            action: n.text,
+            timestamp: n.date,
+            status: n.type === 'error' ? 'error' : 'success'
+        }));
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// START SERVER
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
 });

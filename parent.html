@@ -3,16 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Dashboard - Aura</title>
+    <title>لوحة ولي الأمر - أمل</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        (function() {
+            const role = localStorage.getItem('auraUserRole');
+            if (!role) {
+                window.location.href = 'login.html';
+                return;
+            }
+            if (role === 'admin') {
+                window.location.href = 'admin.html';
+            } else if (role === 'doctor') {
+                window.location.href = 'doctor.html';
+            }
+        })();
+    </script>
 </head>
 <body>
 
     <!-- Header Navbar -->
     <nav class="navbar">
         <a href="parent.html" class="navbar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            Aura <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_parent_header">| Parent Portal</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            أمل <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_parent_header">| Parent Portal</span>
         </a>
         <div class="navbar-links">
             <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
@@ -117,21 +131,21 @@
                     <!-- Statistics Row -->
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-icon">📄</div>
+                            <div class="stat-icon">1</div>
                             <div class="stat-info">
                                 <h4 data-i18n="db_reports">Latest Reports</h4>
                                 <p id="stat-rep-count">0</p>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">📅</div>
+                            <div class="stat-icon">2</div>
                             <div class="stat-info">
                                 <h4 data-i18n="db_appointments">Upcoming Appointments</h4>
                                 <p id="stat-apt-count">0</p>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">🔔</div>
+                            <div class="stat-icon">3</div>
                             <div class="stat-info">
                                 <h4 data-i18n="nav_notifications">Notifications</h4>
                                 <p id="stat-notif-count">0</p>
@@ -401,7 +415,7 @@
                             <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">Dr</div>
                             <div>
                                 <h3 style="font-size: 1rem; color: var(--color-text-main); margin: 0;">Dr. Ahmed (Clinical Psychologist)</h3>
-                                <p style="font-size: 0.75rem; color: var(--color-primary); margin: 0;">🟢 Online / متصل</p>
+                                <p style="font-size: 0.75rem; color: var(--color-primary); margin: 0;"> Online / متصل</p>
                             </div>
                         </div>
 
@@ -410,9 +424,9 @@
 
                         <!-- Attachments Mock bar helper -->
                         <div style="background: rgba(0,0,0,0.02); padding: 6px var(--space-lg); border-top: 1px solid rgba(0,0,0,0.03); display: flex; gap: 12px; font-size: 0.85rem;">
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('leo_family_portrait.png')">📷 Send Image</button>
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('medical_report_june.pdf')">📁 Send PDF</button>
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="sendVoiceNoteMock()">🎤 Send Voice Note</button>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('leo_family_portrait.png')"> Send Image</button>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('medical_report_june.pdf')"> Send PDF</button>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="sendVoiceNoteMock()"> Send Voice Note</button>
                         </div>
 
                         <!-- Input container bar -->
@@ -434,7 +448,7 @@
                             <div class="flex justify-between items-center" style="margin-bottom: 12px;">
                                 <h2 class="card-title" data-i18n="comm_title" style="margin: 0; font-size:1.4rem;">Parent Communities & Support Groups</h2>
                                 <span style="background: rgba(117, 154, 114, 0.2); color: #3B5E39; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
-                                    💬 11 active groups
+                                     11 active groups
                                 </span>
                             </div>
                             <p style="color: var(--color-text-muted);" class="mt-2">Select a topic-based community channel to connect with families, read announcements, ask questions, or request advice from specialists.</p>
@@ -474,7 +488,7 @@
                                 </div>
                                 
                                 <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-                                    <button type="button" class="btn btn-outline" style="font-size: 0.85rem; padding: 6px 12px;" onclick="triggerPostFileMock()">📎 Attach Image / File</button>
+                                    <button type="button" class="btn btn-outline" style="font-size: 0.85rem; padding: 6px 12px;" onclick="triggerPostFileMock()"> Attach Image / File</button>
                                     <span id="post-file-attached-label" style="font-size: 0.85rem; color: var(--color-primary-hover); font-weight: 600;"></span>
                                 </div>
 
@@ -634,8 +648,8 @@
                             <div style="margin-top: 16px;">
                                 <p style="font-weight: 600; margin-bottom: 8px;">HIPAA Login History Logs / سجلات الدخول والأمان</p>
                                 <div style="background: rgba(0,0,0,0.02); padding: 12px; border-radius: 8px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                    <div style="padding-bottom: 8px; border-bottom: 1px dashed rgba(0,0,0,0.05);">🟢 <strong>2026-07-01 21:58:</strong> Successful Login - IP 192.168.1.1 (This session)</div>
-                                    <div style="padding-top: 8px;">🟢 <strong>2026-06-30 09:12:</strong> Successful Login - IP 192.168.1.1</div>
+                                    <div style="padding-bottom: 8px; border-bottom: 1px dashed rgba(0,0,0,0.05);"> <strong>2026-07-01 21:58:</strong> Successful Login - IP 192.168.1.1 (This session)</div>
+                                    <div style="padding-top: 8px;"> <strong>2026-06-30 09:12:</strong> Successful Login - IP 192.168.1.1</div>
                                 </div>
                             </div>
                         </div>
@@ -648,7 +662,7 @@
                 <div class="view-section" id="view-emergency">
                     <div class="emergency-banner-cta">
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                            <span style="font-size: 3rem;">🚨</span>
+                            <span style="font-size: 3rem;"></span>
                             <div>
                                 <h2 style="margin: 0; color: #9B1C1C;" data-i18n="em_title">Emergency Crisis Support</h2>
                                 <h4 style="margin: 4px 0 0; color: #7F1D1D;" data-i18n="em_contact">Healthcare Emergency Line: 911 / 997</h4>

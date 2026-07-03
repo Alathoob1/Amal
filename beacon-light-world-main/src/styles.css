@@ -1,0 +1,237 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Hemaya — Autism Support Platform design system.
+ * Calm, warm, healthcare-grade. Muted sage + sand + terracotta.
+ * No aggressive gradients, no vivid saturation, no flashing motion.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans-ar: "IBM Plex Sans Arabic", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display-ar: "Readex Pro", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-warm: var(--warm);
+  --color-warm-foreground: var(--warm-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --shadow-soft: 0 1px 2px oklch(0.35 0.03 90 / 0.04), 0 8px 24px oklch(0.35 0.03 90 / 0.06);
+  --shadow-lifted: 0 2px 4px oklch(0.35 0.03 90 / 0.05), 0 20px 40px -12px oklch(0.35 0.03 90 / 0.10);
+}
+
+:root {
+  --radius: 1rem;
+  /* Warm cream canvas, soft ink foreground */
+  --background: oklch(0.985 0.010 85);
+  --foreground: oklch(0.28 0.025 150);
+  --surface: oklch(0.965 0.014 85);
+  --surface-elevated: oklch(1 0.004 85);
+  --card: oklch(1 0.004 85);
+  --card-foreground: oklch(0.28 0.025 150);
+  --popover: oklch(1 0.004 85);
+  --popover-foreground: oklch(0.28 0.025 150);
+  /* Sage — primary */
+  --primary: oklch(0.52 0.055 155);
+  --primary-foreground: oklch(0.985 0.010 85);
+  --primary-soft: oklch(0.92 0.030 155);
+  /* Sand — secondary */
+  --secondary: oklch(0.93 0.025 85);
+  --secondary-foreground: oklch(0.32 0.030 150);
+  --muted: oklch(0.945 0.014 85);
+  --muted-foreground: oklch(0.50 0.020 140);
+  /* Terracotta — accent, used sparingly */
+  --accent: oklch(0.72 0.085 45);
+  --accent-foreground: oklch(0.985 0.010 85);
+  --accent-soft: oklch(0.93 0.035 55);
+  /* Warm — dusty gold for badges */
+  --warm: oklch(0.82 0.075 75);
+  --warm-foreground: oklch(0.32 0.040 60);
+  /* Semantic */
+  --success: oklch(0.62 0.075 150);
+  --success-foreground: oklch(0.985 0.010 85);
+  --info: oklch(0.62 0.055 220);
+  --info-foreground: oklch(0.985 0.010 85);
+  --destructive: oklch(0.58 0.130 25);
+  --destructive-foreground: oklch(0.985 0.010 85);
+  --border: oklch(0.90 0.015 90);
+  --input: oklch(0.90 0.015 90);
+  --ring: oklch(0.55 0.055 155);
+  --chart-1: oklch(0.55 0.055 155);
+  --chart-2: oklch(0.72 0.085 45);
+  --chart-3: oklch(0.68 0.055 220);
+  --chart-4: oklch(0.82 0.075 75);
+  --chart-5: oklch(0.62 0.045 300);
+  --sidebar: oklch(0.965 0.014 85);
+  --sidebar-foreground: oklch(0.28 0.025 150);
+  --sidebar-primary: oklch(0.52 0.055 155);
+  --sidebar-primary-foreground: oklch(0.985 0.010 85);
+  --sidebar-accent: oklch(0.93 0.025 85);
+  --sidebar-accent-foreground: oklch(0.32 0.030 150);
+  --sidebar-border: oklch(0.90 0.015 90);
+  --sidebar-ring: oklch(0.55 0.055 155);
+}
+
+.dark {
+  --background: oklch(0.22 0.015 150);
+  --foreground: oklch(0.94 0.010 85);
+  --surface: oklch(0.26 0.015 150);
+  --surface-elevated: oklch(0.30 0.015 150);
+  --card: oklch(0.28 0.015 150);
+  --card-foreground: oklch(0.94 0.010 85);
+  --popover: oklch(0.28 0.015 150);
+  --popover-foreground: oklch(0.94 0.010 85);
+  --primary: oklch(0.72 0.055 155);
+  --primary-foreground: oklch(0.22 0.015 150);
+  --primary-soft: oklch(0.36 0.030 155);
+  --secondary: oklch(0.34 0.020 90);
+  --secondary-foreground: oklch(0.94 0.010 85);
+  --muted: oklch(0.32 0.015 150);
+  --muted-foreground: oklch(0.72 0.015 90);
+  --accent: oklch(0.75 0.080 45);
+  --accent-foreground: oklch(0.22 0.015 150);
+  --accent-soft: oklch(0.38 0.030 55);
+  --warm: oklch(0.78 0.070 75);
+  --warm-foreground: oklch(0.22 0.015 60);
+  --success: oklch(0.72 0.075 150);
+  --success-foreground: oklch(0.22 0.015 150);
+  --info: oklch(0.70 0.055 220);
+  --info-foreground: oklch(0.22 0.015 150);
+  --destructive: oklch(0.65 0.130 25);
+  --destructive-foreground: oklch(0.94 0.010 85);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.055 155);
+  --chart-1: oklch(0.72 0.055 155);
+  --chart-2: oklch(0.75 0.080 45);
+  --chart-3: oklch(0.70 0.055 220);
+  --chart-4: oklch(0.78 0.070 75);
+  --chart-5: oklch(0.68 0.045 300);
+  --sidebar: oklch(0.26 0.015 150);
+  --sidebar-foreground: oklch(0.94 0.010 85);
+  --sidebar-primary: oklch(0.72 0.055 155);
+  --sidebar-primary-foreground: oklch(0.22 0.015 150);
+  --sidebar-accent: oklch(0.34 0.020 90);
+  --sidebar-accent-foreground: oklch(0.94 0.010 85);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.72 0.055 155);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  ::selection {
+    background: var(--color-primary-soft);
+    color: var(--color-foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@utility container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 76rem;
+  padding-inline: 1.25rem;
+  @media (min-width: 768px) { padding-inline: 2rem; }
+}
+
+@utility surface-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Arabic typography: swap sans + display fonts, slightly relax spacing. */
+html[dir="rtl"] {
+  font-family: var(--font-sans-ar);
+  letter-spacing: 0;
+}
+html[dir="rtl"] body {
+  font-family: var(--font-sans-ar);
+}
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4,
+html[dir="rtl"] .font-display {
+  font-family: var(--font-display-ar);
+  letter-spacing: 0;
+  font-weight: 600;
+}
+html[dir="rtl"] .tracking-tight,
+html[dir="rtl"] .tracking-wider,
+html[dir="rtl"] [class*="tracking-["] {
+  letter-spacing: 0 !important;
+}
