@@ -1,3 +1,19 @@
+/*
+=========================================================
+ README - HOW TO RUN THIS PROJECT
+=========================================================
+ This project MUST be run through a Node.js server to work correctly.
+ DO NOT open the HTML files directly (e.g. by double-clicking them, which opens file:///...).
+ 
+ To run the project:
+ 1. Open your terminal in this folder.
+ 2. Run: npm start (or node server.js)
+ 3. Open your browser and go to: http://localhost:3000
+ 
+ All data is loaded live from the SQLite database (database.sqlite).
+=========================================================
+*/
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
@@ -23,6 +39,15 @@ app.use((req, res, next) => {
 
 // Serve static files from the root directory
 app.use(express.static(path.join(__dirname)));
+
+// ----------------------------------------------------
+// PAGE ROUTES (Without .html extension)
+// ----------------------------------------------------
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/parent', (req, res) => res.sendFile(path.join(__dirname, 'parent.html')));
+app.get('/doctor', (req, res) => res.sendFile(path.join(__dirname, 'doctor.html')));
 
 let db;
 
@@ -106,6 +131,19 @@ app.get('/api/users', async (req, res) => {
     res.json(users);
 });
 
+app.put('/api/users/:id', async (req, res) => {
+    try {
+        const { fullName, email, phone } = req.body;
+        await db.run(
+            'UPDATE users SET fullName = ?, email = ?, phone = ? WHERE id = ?',
+            [fullName, email, phone, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ----------------------------------------------------
 // CHILDREN API
 // ----------------------------------------------------
@@ -122,6 +160,19 @@ app.post('/api/children', async (req, res) => {
             [parentId, fullName, age, gender, diagnosis, notes]
         );
         res.json({ success: true, childId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/children/:id', async (req, res) => {
+    try {
+        const { fullName, age, gender, diagnosis, notes } = req.body;
+        await db.run(
+            'UPDATE children SET fullName = ?, age = ?, gender = ?, diagnosis = ?, notes = ? WHERE id = ?',
+            [fullName, age, gender, diagnosis, notes, req.params.id]
+        );
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -225,6 +276,39 @@ app.post('/api/activities', async (req, res) => {
 // DASHBOARD AGGREGATION APIs
 // ----------------------------------------------------
 
+app.post('/api/notifications', async (req, res) => {
+    try {
+        const { userId, text } = req.body;
+        const result = await db.run(
+            'INSERT INTO notifications (userId, text, isRead) VALUES (?, ?, 0)',
+            [userId, text]
+        );
+        res.json({ success: true, notificationId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/notifications/read', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        await db.run('UPDATE notifications SET isRead = 1 WHERE userId = ?', [userId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/notifications', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        await db.run('DELETE FROM notifications WHERE userId = ?', [userId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/parents/:id/data', async (req, res) => {
     try {
         const parentId = req.params.id;
@@ -324,5 +408,10 @@ app.get('/api/admin/stats', async (req, res) => {
 
 // START SERVER
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`\n=================================================`);
+    console.log(`Server is ONLINE!`);
+    console.log(`Please open your browser and go to:`);
+    console.log(`=> http://localhost:${PORT}`);
+    console.log(`\nIMPORTANT: Do NOT open HTML files directly!`);
+    console.log(`=================================================\n`);
 });

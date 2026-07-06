@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول - أمل</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        if (window.location.protocol === 'file:') {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#f8f9fa;font-family:sans-serif;color:#333;text-align:center;">
+                        <h1 style="color:#e74c3c;">Server offline / الخادم غير متاح</h1>
+                        <p style="font-size:1.2rem;">Please run the Node.js server and open http://localhost:3000</p>
+                        <p dir="rtl" style="font-size:1.2rem;">يرجى تشغيل خادم Node.js وفتح الرابط http://localhost:3000</p>
+                    </div>
+                `;
+            });
+        }
+    </script>
     <style>
         .login-container {
             max-width: 420px;
@@ -276,11 +289,9 @@
                 }, 900);
             }
 
-            const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-            
             // Try real backend API
             try {
-                const response = await fetch(API_BASE + '/api/login', {
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -327,11 +338,9 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Registering... / جاري إنشاء الحساب...';
 
-            const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-            
             // Try backend registration
             try {
-                const response = await fetch(API_BASE + '/api/register', {
+                const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fullName: name, email, password, phone, childName, childAge, childGender, childDiagnosis: childLevel, childNotes: childNotes + ' | ' + childHistory + ' | ' + childTriggers + ' | ' + childTherapy + ' | ' + childCom })

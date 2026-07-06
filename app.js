@@ -376,8 +376,7 @@ function toggleLanguage() {
 // API Helpers
 async function apiFetch(endpoint, options = {}) {
   try {
-    const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-    const res = await fetch(API_BASE + endpoint, {
+    const res = await fetch(endpoint, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -728,76 +727,45 @@ function handleDrawingUpload(e) {
     setTimeout(() => {
       progressBar.style.width = '100%';
       
-      setTimeout(() => {
+      setTimeout(async () => {
         modalTitle.setAttribute('data-i18n', 'modal_success');
         modalTitle.textContent = translations[currentLang]['modal_success'];
         
-        // Add item to local storage state
         const data = getLocalData();
-        const newDrawing = {
-          id: `dr-${Date.now()}`,
-          name: title,
-          imageUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400", // colorful abstract
-          status: "analyzing",
-          uploadDate: new Date().toISOString().split('T')[0],
-          aiSummary: "Performing visual extraction for shapes and balance...",
-          emotional: "Pending clinical calibration",
-          behavioral: "Calibrating markers",
-          confidence: "Calculating...",
-          doctorComments: "",
-          recommendations: ""
-        };
-        data.drawings.unshift(newDrawing);
+        const childId = data.childProfile?.id;
+        const doctorId = data.childProfile?.doctor_id;
         
-        // Push a report approval simulation alert/notification
-        const newNotif = {
-          id: `n-${Date.now()}`,
-          type: "report",
-          text: `Analysis started for '${title}'.`,
-          unread: true,
-          date: "Just now"
-        };
-        data.notifications.unshift(newNotif);
-        
-        saveLocalData(data);
-        updateSidebarBadgeCount();
+        if (!childId) {
+            alert("Child profile required. / يتطلب وجود ملف للطفل.");
+            modal.classList.remove('active');
+            return;
+        }
 
-        // Simulate doctor approving it in 8 seconds
-        setTimeout(() => {
-          const innerData = getLocalData();
-          const drawIndex = innerData.drawings.findIndex(dr => dr.id === newDrawing.id);
-          if (drawIndex !== -1) {
-            innerData.drawings[drawIndex].status = "approved";
-            innerData.drawings[drawIndex].aiSummary = "The color palette features moderate use of light blue and brown. Structure and spacing suggest high coordination and self-directed attention.";
-            innerData.drawings[drawIndex].emotional = "Content child state, strong visual expression of home environment.";
-            innerData.drawings[drawIndex].behavioral = "Repeated spiral constructs on upper drawing corners showing focused execution.";
-            innerData.drawings[drawIndex].confidence = "94%";
-            innerData.drawings[drawIndex].doctorComments = "Clinically verified. Drawing reflects great spatial planning. Recommended to practice naming the figures painted.";
-            innerData.drawings[drawIndex].recommendations = "Introduce coloring exercises involving family interactions to guide narrative therapy.";
-            
-            innerData.notifications.unshift({
-              id: `n-${Date.now()}`,
-              type: "report",
-              text: `Dr. Ahmed has reviewed and approved the clinical report for '${title}'.`,
-              unread: true,
-              date: "Just now"
+        try {
+            await fetch('/api/activities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    childId,
+                    doctorId,
+                    title,
+                    description: "Performing visual extraction for shapes and balance...",
+                    status: "Pending"
+                })
             });
-            saveLocalData(innerData);
-            updateSidebarBadgeCount();
-            
-            // Re-render if looking at the active screen
-            const activeSec = document.querySelector('.view-section.active');
-            if (activeSec) {
-              renderViewContent(activeSec.id);
-            }
-          }
-        }, 8000);
-
+            await fetchAndStoreLocalData();
+        } catch (err) {
+            console.error("Failed to upload drawing activity", err);
+        }
+        
+        renderUploadHistory();
         setTimeout(() => {
           modal.classList.remove('active');
+          fileInput.value = '';
+          titleInput.value = '';
           showView('view-upload');
-        }, 1200);
-      }, 1500);
+        }, 1500);
+      }, 800);
     }, 100);
   }
 }
@@ -958,7 +926,7 @@ function renderAppointmentsPage() {
 }
 
 // Appointment booking form logic
-function handleBookAppointment(e) {
+async function handleBookAppointment(e) {
   e.preventDefault();
   const dateInput = document.getElementById('apt-date-input');
   const timeInput = document.getElementById('apt-time-input');
@@ -970,79 +938,123 @@ function handleBookAppointment(e) {
   }
 
   const data = getLocalData();
-  const newApt = {
-    id: `apt-${Date.now()}`,
-    doctor: "Dr. Ahmed",
-    date: dateInput.value,
-    time: timeInput.value,
-    type: typeInput.value,
-    status: "scheduled"
-  };
-  data.appointments.unshift(newApt);
-  
-  // Alert/Notification addition
-  data.notifications.unshift({
-    id: `n-${Date.now()}`,
-    type: "appointment",
-    text: `Appointment booked for ${dateInput.value} at ${timeInput.value}.`,
-    unread: true,
-    date: "Just now"
-  });
+  const userId = getUserId();
+  const childId = data.childProfile?.id;
+  const doctorId = data.childProfile?.doctor_id;
 
-  saveLocalData(data);
-  updateSidebarBadgeCount();
-  renderViewContent('view-appointments');
-  
-  // Reset form
-  dateInput.value = '';
-  timeInput.value = '';
-  typeInput.value = '';
-  
-  alert("Appointment scheduled successfully! / تم حجز الموعد بنجاح");
+  if (!childId || !doctorId) {
+      alert("No child profile or assigned doctor found to book appointment. / لا يوجد ملف طفل أو طبيب مخصص للحجز.");
+      return;
+  }
+
+  try {
+      const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              childId,
+              parentId: userId,
+              doctorId,
+              date: dateInput.value,
+              time: timeInput.value,
+              status: "Scheduled",
+              notes: typeInput.value
+          })
+      });
+      const result = await res.json();
+      
+      if (result.success) {
+          // Notification
+          await fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  userId,
+                  text: `Appointment booked for ${dateInput.value} at ${timeInput.value}.`
+              })
+          });
+
+          await fetchAndStoreLocalData();
+          updateSidebarBadgeCount();
+          renderViewContent('view-appointments');
+          
+          // Reset form
+          dateInput.value = '';
+          timeInput.value = '';
+          typeInput.value = '';
+          
+          alert("Appointment scheduled successfully! / تم حجز الموعد بنجاح");
+      } else {
+          alert("Error scheduling appointment.");
+      }
+  } catch (err) {
+      console.error(err);
+      alert("Failed to schedule appointment.");
+  }
 }
 
 function cancelAppointment(id) {
-  if (confirm("Are you sure you want to cancel this appointment? / هل أنت متأكد من إلغاء هذا الموعد؟")) {
-    const data = getLocalData();
-    const index = data.appointments.findIndex(a => a.id === id);
-    if (index !== -1) {
-      data.appointments[index].status = "cancelled";
-      // Push cancellation alert
-      data.notifications.unshift({
-        id: `n-${Date.now()}`,
-        type: "appointment",
-        text: `Cancelled appointment on ${data.appointments[index].date}.`,
-        unread: true,
-        date: "Just now"
-      });
-      saveLocalData(data);
-      updateSidebarBadgeCount();
-      renderViewContent('view-appointments');
+    cancelAppointmentAsync(id);
+}
+
+async function cancelAppointmentAsync(id) {
+  if (confirm("Are you sure you want to cancel this appointment? / هل أنت متأكد من إلغاء الموعد؟")) {
+    try {
+        const res = await fetch(`/api/appointments/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: "Cancelled", notes: "Cancelled by Parent" })
+        });
+        const result = await res.json();
+        if (result.success) {
+            // Notification
+            const userId = getUserId();
+            await fetch('/api/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, text: `Appointment cancelled.` })
+            });
+
+            await fetchAndStoreLocalData();
+            updateSidebarBadgeCount();
+            renderViewContent('view-appointments');
+        } else {
+            alert("Error cancelling appointment.");
+        }
+    } catch (err) {
+        console.error(err);
     }
   }
 }
 
-function rescheduleAppointment(id) {
+async function rescheduleAppointment(id) {
   const newDate = prompt("Enter new date (e.g. 2026-07-10) / أدخل التاريخ الجديد:");
   const newTime = prompt("Enter new time (e.g. 10:00 AM) / أدخل الوقت الجديد:");
   if (newDate && newTime) {
-    const data = getLocalData();
-    const index = data.appointments.findIndex(a => a.id === id);
-    if (index !== -1) {
-      data.appointments[index].date = newDate;
-      data.appointments[index].time = newTime;
-      data.appointments[index].status = "scheduled";
-      // Push rescheduling alert
-      data.notifications.unshift({
-        id: `n-${Date.now()}`,
-        type: "appointment",
-        text: `Rescheduled appointment to ${newDate} at ${newTime}.`,
-        unread: true,
-        date: "Just now"
-      });
-      saveLocalData(data);
-      updateSidebarBadgeCount();
-      renderViewContent('view-appointments');
+    try {
+        const res = await fetch(`/api/appointments/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: "Scheduled", notes: `Rescheduled to ${newDate} at ${newTime}` })
+        });
+        const result = await res.json();
+        if (result.success) {
+            // Notification
+            const userId = getUserId();
+            await fetch('/api/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, text: `Rescheduled appointment to ${newDate} at ${newTime}.` })
+            });
+
+            await fetchAndStoreLocalData();
+            updateSidebarBadgeCount();
+            renderViewContent('view-appointments');
+        } else {
+            alert("Error rescheduling appointment.");
+        }
+    } catch (err) {
+        console.error(err);
     }
   }
 }
@@ -1050,13 +1062,12 @@ function rescheduleAppointment(id) {
 // Chat Page Helpers
 async function renderChatMessages() {
   const userId = getUserId();
-  const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
   const chatMessagesEl = document.getElementById('chat-history-container');
   if (!chatMessagesEl) return;
   chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل الرسائل...</div>';
 
   try {
-    let res = await fetch(API_BASE + `/api/users/${userId}/conversations`);
+    let res = await fetch(`/api/users/${userId}/conversations`);
     let data = await res.json();
     const conversations = data.conversations || [];
     
@@ -1069,7 +1080,7 @@ async function renderChatMessages() {
     
     window.activeConversationDoctorId = conv.doctor_id;
     
-    res = await fetch(API_BASE + `/api/conversations/${conv.id}/messages`);
+    res = await fetch(`/api/conversations/${conv.id}/messages`);
     data = await res.json();
     const msgs = data.messages || [];
     console.log("Messages fetched:", msgs);
@@ -1113,8 +1124,7 @@ async function sendChatMessage(e) {
   textInput.value = '';
   
   try {
-      const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-      const res = await fetch(API_BASE + '/api/messages', {
+      const res = await fetch('/api/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1508,21 +1518,41 @@ function renderNotificationsPage() {
   `;
 }
 
-function markAllNotificationsRead() {
-  const data = getLocalData();
-  data.notifications.forEach(n => n.unread = false);
-  saveLocalData(data);
-  updateSidebarBadgeCount();
-  renderNotificationsPage();
-  alert("All notifications marked as read. / تم تحديد الكل كمقروء");
+async function markAllNotificationsRead() {
+  const userId = getUserId();
+  try {
+      const res = await fetch('/api/notifications/read', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+      });
+      if ((await res.json()).success) {
+          await fetchAndStoreLocalData();
+          updateSidebarBadgeCount();
+          renderNotificationsPage();
+          alert("All notifications marked as read. / تم تحديد الكل كمقروء");
+      }
+  } catch (err) {
+      console.error(err);
+  }
 }
 
-function clearAllNotifications() {
-  const data = getLocalData();
-  data.notifications = [];
-  saveLocalData(data);
-  updateSidebarBadgeCount();
-  renderNotificationsPage();
+async function clearAllNotifications() {
+  const userId = getUserId();
+  try {
+      const res = await fetch('/api/notifications', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+      });
+      if ((await res.json()).success) {
+          await fetchAndStoreLocalData();
+          updateSidebarBadgeCount();
+          renderNotificationsPage();
+      }
+  } catch (err) {
+      console.error(err);
+  }
 }
 
 // Update badges on sidebar nav
@@ -1549,53 +1579,97 @@ function updateSidebarBadgeCount() {
 }
 
 // Child Profile Save action
-function handleProfileUpdate(e) {
+async function handleProfileUpdate(e) {
   e.preventDefault();
   const data = getLocalData();
+  
+  if (!data || !data.childProfile || !data.childProfile.id) {
+      alert("No child profile found to update. / لم يتم العثور على ملف للطفل لتحديثه.");
+      return;
+  }
 
-  data.childProfile.name = document.getElementById('prof-name-input').value;
-  data.childProfile.age = parseInt(document.getElementById('prof-age-input').value) || 0;
-  data.childProfile.gender = document.getElementById('prof-gender-input').value;
-  data.childProfile.autismLevel = document.getElementById('prof-level-input').value;
-  data.childProfile.communicationStyle = document.getElementById('prof-com-input').value;
-  data.childProfile.behavioralHistory = document.getElementById('prof-history-input').value;
-  data.childProfile.emotionalTriggers = document.getElementById('prof-triggers-input').value;
-  data.childProfile.medicalNotes = document.getElementById('prof-notes-input').value;
-  data.childProfile.therapyHistory = document.getElementById('prof-therapy-input').value;
-  data.childProfile.medications = document.getElementById('prof-med-input').value;
-  data.childProfile.allergies = document.getElementById('prof-allergies-input').value;
-  data.childProfile.emergencyContact = document.getElementById('prof-emergency-input').value;
-
-  // Add notification log
-  data.notifications.unshift({
-    id: `n-${Date.now()}`,
-    type: "profile",
-    text: "Child medical and behavioral profile updated successfully.",
-    unread: true,
-    date: "Just now"
+  const childId = data.childProfile.id;
+  const fullName = document.getElementById('prof-name-input').value;
+  const age = parseInt(document.getElementById('prof-age-input').value) || 0;
+  const gender = document.getElementById('prof-gender-input').value;
+  const autismLevel = document.getElementById('prof-level-input').value;
+  
+  // Combine notes and other fields into a single notes field as per schema
+  const communicationStyle = document.getElementById('prof-com-input').value;
+  const behavioralHistory = document.getElementById('prof-history-input').value;
+  const emotionalTriggers = document.getElementById('prof-triggers-input').value;
+  const medicalNotes = document.getElementById('prof-notes-input').value;
+  const therapyHistory = document.getElementById('prof-therapy-input').value;
+  const medications = document.getElementById('prof-med-input').value;
+  const allergies = document.getElementById('prof-allergies-input').value;
+  
+  const notes = JSON.stringify({
+      communicationStyle, behavioralHistory, emotionalTriggers,
+      medicalNotes, therapyHistory, medications, allergies
   });
 
-  saveLocalData(data);
-  updateSidebarBadgeCount();
-  alert("Child profile saved successfully! / تم حفظ ملف الطفل بنجاح");
-  showView('view-dashboard');
+  try {
+      const res = await fetch(`/api/children/${childId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, age, gender, diagnosis: autismLevel, notes })
+      });
+      const result = await res.json();
+      
+      if (result.success) {
+          // Add notification log
+          const userId = getUserId();
+          await fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId, text: "Child medical and behavioral profile updated successfully." })
+          });
+          
+          await fetchAndStoreLocalData();
+          updateSidebarBadgeCount();
+          alert("Child profile saved successfully! / تم حفظ ملف الطفل بنجاح");
+          showView('view-dashboard');
+      } else {
+          alert("Error saving child profile. / حدث خطأ أثناء حفظ ملف الطفل.");
+      }
+  } catch (err) {
+      console.error(err);
+      alert("Failed to save child profile.");
+  }
 }
 
 // Settings changes saving
-function handleSettingsUpdate(e, type) {
+async function handleSettingsUpdate(e, type) {
   e.preventDefault();
   
   if (type === 'profile') {
-    const parent = getLocalData();
-    parent.parentName = e.target.querySelector('input[type="text"]').value;
-    parent.email = e.target.querySelector('input[type="email"]').value;
-    saveLocalData(parent);
-    
-    // update navbar instantly
-    const navNameEl = document.getElementById('parent-navbar-name');
-    if (navNameEl) navNameEl.textContent = parent.parentName;
+      const userId = getUserId();
+      const fullName = e.target.querySelector('input[type="text"]').value;
+      const email = e.target.querySelector('input[type="email"]').value;
+      const phone = e.target.querySelector('input[type="tel"]').value;
+
+      try {
+          const res = await fetch(`/api/users/${userId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fullName, email, phone })
+          });
+          const result = await res.json();
+          if (result.success) {
+              await fetchAndStoreLocalData();
+              const navNameEl = document.getElementById('parent-navbar-name');
+              if (navNameEl) navNameEl.textContent = fullName;
+              alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
+          } else {
+              alert("Error updating settings.");
+          }
+      } catch (err) {
+          console.error(err);
+          alert("Failed to update settings.");
+      }
+  } else {
+      alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
   }
-  alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
 }
 
 function toggleSettingsTab(tabName) {

@@ -6,6 +6,19 @@
     <title>بوابة الطبيب - أمل</title>
     <link rel="stylesheet" href="styles.css">
     <script>
+        if (window.location.protocol === 'file:') {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#f8f9fa;font-family:sans-serif;color:#333;text-align:center;">
+                        <h1 style="color:#e74c3c;">Server offline / الخادم غير متاح</h1>
+                        <p style="font-size:1.2rem;">Please run the Node.js server and open http://localhost:3000</p>
+                        <p dir="rtl" style="font-size:1.2rem;">يرجى تشغيل خادم Node.js وفتح الرابط http://localhost:3000</p>
+                    </div>
+                `;
+            });
+        }
+    </script>
+    <script>
         let doctorData = null;
         const doctorId = localStorage.getItem('auraUserId');
         const role = localStorage.getItem('auraUserRole');
@@ -20,8 +33,7 @@
 
         async function initDoctorApp() {
             try {
-                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-                const res = await fetch(API_BASE + `/api/doctors/${doctorId}/data`);
+                const res = await fetch(`/api/doctors/${doctorId}/data`);
                 if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 doctorData = await res.json();
                 if(doctorData.error) throw new Error(doctorData.error);
@@ -945,8 +957,7 @@
         
         async function loadConversations() {
             try {
-                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-                const res = await fetch(API_BASE + `/api/users/${doctorId}/conversations`);
+                const res = await fetch(`/api/users/${doctorId}/conversations`);
                 const data = await res.json();
                 conversations = data.conversations || [];
                 console.log("Conversations fetched:", conversations);
@@ -993,8 +1004,7 @@
             if (!convId) return;
             
             try {
-                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-                const res = await fetch(API_BASE + `/api/conversations/${convId}/messages`);
+                const res = await fetch(`/api/conversations/${convId}/messages`);
                 const data = await res.json();
                 const msgs = data.messages || [];
                 console.log("Messages fetched:", msgs);
@@ -1018,8 +1028,7 @@
             if(!text || !activeParentId) return;
             
             try {
-                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-                const res = await fetch(API_BASE + '/api/messages', {
+                const res = await fetch('/api/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1047,8 +1056,7 @@
         // Wrap initDoctorApp to auto-refresh UI on actions
         async function refreshDoctorData() {
             try {
-                const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') ? 'http://localhost:3000' : '';
-                const res = await fetch(API_BASE + `/api/doctors/${doctorId}/data`);
+                const res = await fetch(`/api/doctors/${doctorId}/data`);
                 doctorData = await res.json();
                 renderDoctorDashboard();
             } catch(e) { console.error('Failed to refresh data:', e); }
