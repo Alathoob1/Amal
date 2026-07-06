@@ -51,16 +51,15 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
         
-        // Match password (handle plain text for seed data if needed, or bcrypt)
         let isMatch = false;
         if (user.password === password) {
-            isMatch = true; // For simple seed data
+            isMatch = true; 
         } else {
             try { isMatch = await bcrypt.compare(password, user.password); } catch(e){}
         }
         
         if (isMatch) {
-            res.json({ success: true, role: user.role, userId: user.id, name: user.name });
+            res.json({ success: true, role: user.role, userId: user.id, name: user.fullName });
         } else {
             res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
@@ -71,7 +70,8 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
     try {
-        const { name, email, password, phone, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy } = req.body;
+        // Register parent
+        const { fullName, email, password, phone, childName, childAge, childGender, childDiagnosis, childNotes } = req.body;
         
         const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
         if (existing) {
@@ -80,17 +80,17 @@ app.post('/api/register', async (req, res) => {
         
         const hashedPw = await bcrypt.hash(password, 10);
         const result = await db.run(
-            'INSERT INTO users (role, name, email, password, phone) VALUES (?, ?, ?, ?, ?)',
-            ['parent', name, email, hashedPw, phone]
+            'INSERT INTO users (role, fullName, email, password, phone) VALUES (?, ?, ?, ?, ?)',
+            ['parent', fullName, email, hashedPw, phone]
         );
         const parentId = result.lastID;
         
-        await db.run(
-            `INSERT INTO children 
-            (parent_id, name, age, gender, autism_level, communication_style, behavioral_history, emotional_triggers, medical_notes, therapy_history) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [parentId, childName, childAge, childGender, childLevel, childCom, childHistory, childTriggers, childNotes, childTherapy]
-        );
+        if (childName) {
+            await db.run(
+                `INSERT INTO children (parentId, fullName, age, gender, diagnosis, notes) VALUES (?, ?, ?, ?, ?, ?)`,
+                [parentId, childName, childAge, childGender, childDiagnosis, childNotes]
+            );
+        }
         
         res.json({ success: true, message: 'Account created successfully', userId: parentId });
     } catch (err) {
@@ -102,48 +102,151 @@ app.post('/api/register', async (req, res) => {
 // USERS API
 // ----------------------------------------------------
 app.get('/api/users', async (req, res) => {
-    const users = await db.all('SELECT id, role, name, email, phone, created_at as createdAt, "active" as status FROM users');
+    const users = await db.all('SELECT id, role, fullName, email, phone, createdAt FROM users');
     res.json(users);
 });
 
-app.get('/api/users/:id', async (req, res) => {
-    const user = await db.get('SELECT id, role, name, email, phone, created_at as createdAt, "active" as status FROM users WHERE id = ?', [req.params.id]);
-    res.json(user);
+// ----------------------------------------------------
+// CHILDREN API
+// ----------------------------------------------------
+app.get('/api/children', async (req, res) => {
+    const children = await db.all('SELECT * FROM children');
+    res.json(children);
 });
 
-// ----------------------------------------------------
-// PARENT / CHILD DATA
-// ----------------------------------------------------
-app.get('/api/parents/:id/data', async (req, res) => {
+app.post('/api/children', async (req, res) => {
     try {
-        const parentId = req.params.id;
-        const profile = await db.get('SELECT * FROM users WHERE id = ? AND role = "parent"', [parentId]);
-        if (!profile) return res.status(404).json({ error: 'Parent not found' });
-        
-        const children = await db.all('SELECT * FROM children WHERE parent_id = ?', [parentId]);
-        const drawings = await db.all('SELECT d.* FROM drawings d JOIN children c ON d.child_id = c.id WHERE c.parent_id = ? ORDER BY d.id DESC', [parentId]);
-        const appointments = await db.all('SELECT a.*, u.name as doctor_name FROM appointments a JOIN users u ON a.doctor_id = u.id WHERE a.parent_id = ? ORDER BY a.date DESC', [parentId]);
-        const notifications = await db.all('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC', [parentId]);
-        
-        res.json({
-            profile,
-            children,
-            drawings,
-            appointments,
-            notifications
-        });
+        const { parentId, fullName, age, gender, diagnosis, notes } = req.body;
+        const result = await db.run(
+            `INSERT INTO children (parentId, fullName, age, gender, diagnosis, notes) VALUES (?, ?, ?, ?, ?, ?)`,
+            [parentId, fullName, age, gender, diagnosis, notes]
+        );
+        res.json({ success: true, childId: result.lastID });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 // ----------------------------------------------------
-// DOCTOR DATA
+// APPOINTMENTS API
 // ----------------------------------------------------
-app.get('/api/doctors', async (req, res) => {
+app.get('/api/appointments', async (req, res) => {
+    const appointments = await db.all('SELECT * FROM appointments ORDER BY date DESC');
+    res.json(appointments);
+});
+
+app.post('/api/appointments', async (req, res) => {
     try {
-        const doctors = await db.all('SELECT id, role, name, email, phone, created_at as joinDate, "active" as status, "متاح" as availability FROM users WHERE role = "doctor"');
-        res.json({ doctors });
+        const { childId, parentId, doctorId, date, time, status, notes } = req.body;
+        const result = await db.run(
+            'INSERT INTO appointments (childId, parentId, doctorId, date, time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [childId, parentId, doctorId, date, time, status || 'Pending', notes]
+        );
+        res.json({ success: true, appointmentId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/appointments/:id', async (req, res) => {
+    try {
+        const { status, notes } = req.body;
+        await db.run('UPDATE appointments SET status = ?, notes = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?', [status, notes, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// REPORTS API
+// ----------------------------------------------------
+app.get('/api/reports', async (req, res) => {
+    const reports = await db.all('SELECT * FROM reports ORDER BY createdAt DESC');
+    res.json(reports);
+});
+
+app.post('/api/reports', async (req, res) => {
+    try {
+        const { childId, doctorId, title, progress, recommendations } = req.body;
+        const result = await db.run(
+            'INSERT INTO reports (childId, doctorId, title, progress, recommendations) VALUES (?, ?, ?, ?, ?)',
+            [childId, doctorId, title, progress, recommendations]
+        );
+        res.json({ success: true, reportId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// MESSAGES API
+// ----------------------------------------------------
+app.get('/api/messages', async (req, res) => {
+    const messages = await db.all('SELECT * FROM messages ORDER BY createdAt ASC');
+    res.json(messages);
+});
+
+app.post('/api/messages', async (req, res) => {
+    try {
+        const { senderId, receiverId, message } = req.body;
+        const result = await db.run(
+            'INSERT INTO messages (senderId, receiverId, message) VALUES (?, ?, ?)',
+            [senderId, receiverId, message]
+        );
+        res.json({ success: true, messageId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// ACTIVITIES API
+// ----------------------------------------------------
+app.get('/api/activities', async (req, res) => {
+    const activities = await db.all('SELECT * FROM activities ORDER BY createdAt DESC');
+    res.json(activities);
+});
+
+app.post('/api/activities', async (req, res) => {
+    try {
+        const { childId, doctorId, title, description, status } = req.body;
+        const result = await db.run(
+            'INSERT INTO activities (childId, doctorId, title, description, status) VALUES (?, ?, ?, ?, ?)',
+            [childId, doctorId, title, description, status || 'Pending']
+        );
+        res.json({ success: true, activityId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ----------------------------------------------------
+// DASHBOARD AGGREGATION APIs
+// ----------------------------------------------------
+
+app.get('/api/parents/:id/data', async (req, res) => {
+    try {
+        const parentId = req.params.id;
+        const profile = await db.get('SELECT id, fullName, email, phone FROM users WHERE id = ? AND role = "parent"', [parentId]);
+        if (!profile) return res.status(404).json({ error: 'Parent not found' });
+        
+        const children = await db.all('SELECT * FROM children WHERE parentId = ?', [parentId]);
+        const activities = await db.all('SELECT a.* FROM activities a JOIN children c ON a.childId = c.id WHERE c.parentId = ? ORDER BY a.createdAt DESC', [parentId]);
+        const appointments = await db.all('SELECT a.*, u.fullName as doctorName FROM appointments a JOIN users u ON a.doctorId = u.id WHERE a.parentId = ? ORDER BY a.date DESC', [parentId]);
+        const notifications = await db.all('SELECT * FROM notifications WHERE userId = ? ORDER BY id DESC', [parentId]);
+        const messages = await db.all('SELECT * FROM messages WHERE senderId = ? OR receiverId = ? ORDER BY createdAt ASC', [parentId, parentId]);
+        const reports = await db.all('SELECT r.* FROM reports r JOIN children c ON r.childId = c.id WHERE c.parentId = ? ORDER BY r.createdAt DESC', [parentId]);
+
+        res.json({
+            profile,
+            children,
+            activities,
+            appointments,
+            notifications,
+            messages,
+            reports
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -152,248 +255,68 @@ app.get('/api/doctors', async (req, res) => {
 app.get('/api/doctors/:id/data', async (req, res) => {
     try {
         const doctorId = req.params.id;
-        const profile = await db.get('SELECT id, role, name, email, phone FROM users WHERE id = ?', [doctorId]);
+        const profile = await db.get('SELECT id, fullName, email, phone FROM users WHERE id = ? AND role = "doctor"', [doctorId]);
         if (!profile) return res.status(404).json({ error: 'Doctor not found' });
         
-        const patients = await db.all('SELECT c.*, u.name as parent_name FROM children c JOIN users u ON c.parent_id = u.id WHERE c.doctor_id = ?', [doctorId]);
-        const pendingAnalyses = await db.all('SELECT d.*, c.name as child_name, c.age, c.gender FROM drawings d JOIN children c ON d.child_id = c.id WHERE d.status = "review" AND c.doctor_id = ?', [doctorId]);
-        const appointments = await db.all('SELECT a.*, c.name as child_name, u.name as parent_name FROM appointments a JOIN children c ON a.child_id = c.id JOIN users u ON a.parent_id = u.id WHERE a.doctor_id = ? ORDER BY a.date DESC', [doctorId]);
-        const reports = await db.all('SELECT r.*, c.name as child_name, c.age as child_age FROM reports r JOIN children c ON r.child_id = c.id WHERE r.doctor_id = ? ORDER BY r.id DESC', [doctorId]);
-        
+        const doctorDetails = await db.get('SELECT * FROM doctors WHERE userId = ?', [doctorId]);
+
+        // Get unique children linked to this doctor via appointments or activities or reports
+        const patients = await db.all(`
+            SELECT DISTINCT c.*, u.fullName as parentName 
+            FROM children c 
+            JOIN users u ON c.parentId = u.id
+            WHERE c.id IN (
+                SELECT childId FROM appointments WHERE doctorId = ?
+                UNION
+                SELECT childId FROM reports WHERE doctorId = ?
+                UNION
+                SELECT childId FROM activities WHERE doctorId = ?
+            )
+        `, [doctorId, doctorId, doctorId]);
+
+        const activities = await db.all('SELECT a.*, c.fullName as childName FROM activities a JOIN children c ON a.childId = c.id WHERE a.doctorId = ? ORDER BY a.createdAt DESC', [doctorId]);
+        const appointments = await db.all('SELECT a.*, c.fullName as childName, u.fullName as parentName FROM appointments a JOIN children c ON a.childId = c.id JOIN users u ON a.parentId = u.id WHERE a.doctorId = ? ORDER BY a.date DESC', [doctorId]);
+        const reports = await db.all('SELECT r.*, c.fullName as childName FROM reports r JOIN children c ON r.childId = c.id WHERE r.doctorId = ? ORDER BY r.id DESC', [doctorId]);
+        const messages = await db.all('SELECT * FROM messages WHERE senderId = ? OR receiverId = ? ORDER BY createdAt ASC', [doctorId, doctorId]);
+
         res.json({
-            profile,
+            profile: { ...profile, ...doctorDetails },
             patients,
-            pendingAnalyses,
+            activities,
             appointments,
-            reports
+            reports,
+            messages
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// ----------------------------------------------------
-// REPORTS
-// ----------------------------------------------------
-app.put('/api/reports/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        await db.run('UPDATE reports SET status = ? WHERE id = ?', [status, req.params.id]);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// MESSAGES & CONVERSATIONS
-// ----------------------------------------------------
-app.get('/api/users/:id/conversations', async (req, res) => {
-    try {
-        const userId = req.params.id;
-        const user = await db.get('SELECT role FROM users WHERE id = ?', [userId]);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        
-        let conversations;
-        if (user.role === 'doctor') {
-            conversations = await db.all(`
-                SELECT c.*, u.name as parent_name, ch.name as child_name 
-                FROM conversations c 
-                JOIN users u ON c.parent_id = u.id 
-                LEFT JOIN children ch ON c.child_id = ch.id 
-                WHERE c.doctor_id = ? 
-                ORDER BY c.updated_at DESC
-            `, [userId]);
-        } else if (user.role === 'parent') {
-            conversations = await db.all(`
-                SELECT c.*, u.name as doctor_name, ch.name as child_name 
-                FROM conversations c 
-                JOIN users u ON c.doctor_id = u.id 
-                LEFT JOIN children ch ON c.child_id = ch.id 
-                WHERE c.parent_id = ? 
-                ORDER BY c.updated_at DESC
-            `, [userId]);
-        } else {
-            conversations = [];
-        }
-        res.json({ conversations });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/api/conversations/:id/messages', async (req, res) => {
-    try {
-        const messages = await db.all('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.conversation_id = ? ORDER BY m.id ASC', [req.params.id]);
-        res.json({ messages });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/api/messages', async (req, res) => {
-    try {
-        const { sender_id, receiver_id, sender_role, text } = req.body;
-        const now = new Date();
-        const time = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-        const date = now.toISOString().split('T')[0];
-        
-        let doctor_id, parent_id;
-        if (sender_role === 'doctor') {
-            doctor_id = sender_id;
-            parent_id = receiver_id;
-        } else {
-            doctor_id = receiver_id;
-            parent_id = sender_id;
-        }
-        
-        let conv = await db.get('SELECT id FROM conversations WHERE doctor_id = ? AND parent_id = ?', [doctor_id, parent_id]);
-        if (!conv) {
-            const child = await db.get('SELECT id FROM children WHERE parent_id = ? AND doctor_id = ? LIMIT 1', [parent_id, doctor_id]) || await db.get('SELECT id FROM children WHERE parent_id = ? LIMIT 1', [parent_id]);
-            const child_id = child ? child.id : null;
-            const convRes = await db.run('INSERT INTO conversations (doctor_id, parent_id, child_id, last_message) VALUES (?, ?, ?, ?)', [doctor_id, parent_id, child_id, text]);
-            conv = { id: convRes.lastID };
-        } else {
-            await db.run('UPDATE conversations SET last_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [text, conv.id]);
-        }
-        
-        const result = await db.run(
-            'INSERT INTO messages (conversation_id, sender_id, sender_role, text, time, date) VALUES (?, ?, ?, ?, ?, ?)',
-            [conv.id, sender_id, sender_role, text, time, date]
-        );
-        res.json({ success: true, messageId: result.lastID, conversationId: conv.id });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// PROFILE
-// ----------------------------------------------------
-app.put('/api/users/:id/profile', async (req, res) => {
-    try {
-        const { name, email, phone, password } = req.body;
-        if (password) {
-            const hashedPw = await bcrypt.hash(password, 10);
-            await db.run('UPDATE users SET name = ?, email = ?, phone = ?, password = ? WHERE id = ?', [name, email, phone, hashedPw, req.params.id]);
-        } else {
-            await db.run('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?', [name, email, phone, req.params.id]);
-        }
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// ADMIN DATA
-// ----------------------------------------------------
 app.get('/api/admin/stats', async (req, res) => {
     try {
         const parents = await db.get('SELECT COUNT(*) as count FROM users WHERE role = "parent"');
         const doctors = await db.get('SELECT COUNT(*) as count FROM users WHERE role = "doctor"');
         const children = await db.get('SELECT COUNT(*) as count FROM children');
-        const newAnalyses = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "analyzing"');
-        const pendingReviews = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "review"');
-        const approvedReports = await db.get('SELECT COUNT(*) as count FROM drawings WHERE status = "approved"');
-        const flags = await db.get('SELECT COUNT(*) as count FROM community_reports WHERE status = "pending"');
+        const pendingActivities = await db.get('SELECT COUNT(*) as count FROM activities WHERE status = "Pending"');
+        const totalReports = await db.get('SELECT COUNT(*) as count FROM reports');
+        const totalAppointments = await db.get('SELECT COUNT(*) as count FROM appointments');
         
-        const communityReports = await db.all('SELECT r.*, u.name as user_name, g.name_ar as group_name FROM community_reports r JOIN users u ON r.user_id = u.id LEFT JOIN community_groups g ON r.group_id = g.id ORDER BY r.id DESC LIMIT 20');
-        
+        const logs = await db.all('SELECT * FROM notifications ORDER BY id DESC LIMIT 20');
+        const users = await db.all('SELECT id, role, fullName, email, phone, createdAt FROM users ORDER BY id DESC LIMIT 10');
+
         res.json({
             stats: {
                 parents: parents.count,
                 doctors: doctors.count,
                 children: children.count,
-                newAnalyses: newAnalyses.count,
-                pendingReviews: pendingReviews.count,
-                approvedReports: approvedReports.count,
-                flags: flags.count,
+                pendingActivities: pendingActivities.count,
+                totalReports: totalReports.count,
+                totalAppointments: totalAppointments.count,
                 total: parents.count + doctors.count + children.count
             },
-            communityReports
+            logs,
+            users
         });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// DRAWINGS / AI ANALYSES
-// ----------------------------------------------------
-app.post('/api/drawings', async (req, res) => {
-    try {
-        const { child_id, name, image_url } = req.body;
-        const result = await db.run(
-            'INSERT INTO drawings (child_id, name, image_url, status, upload_date) VALUES (?, ?, ?, "analyzing", date("now"))',
-            [child_id, name, image_url]
-        );
-        res.json({ success: true, drawingId: result.lastID });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.put('/api/drawings/:id/review', async (req, res) => {
-    try {
-        const { status, doctor_comments, recommendations } = req.body;
-        await db.run(
-            'UPDATE drawings SET status = ?, doctor_comments = ?, recommendations = ? WHERE id = ?',
-            [status, doctor_comments, recommendations, req.params.id]
-        );
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// APPOINTMENTS
-// ----------------------------------------------------
-app.post('/api/appointments', async (req, res) => {
-    try {
-        const { parent_id, doctor_id, child_id, date, time, type } = req.body;
-        const result = await db.run(
-            'INSERT INTO appointments (parent_id, doctor_id, child_id, date, time, type) VALUES (?, ?, ?, ?, ?, ?)',
-            [parent_id, doctor_id, child_id, date, time, type]
-        );
-        res.json({ success: true, appointmentId: result.lastID });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.put('/api/appointments/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        await db.run('UPDATE appointments SET status = ? WHERE id = ?', [status, req.params.id]);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ----------------------------------------------------
-// COMMUNITY
-// ----------------------------------------------------
-app.get('/api/community/groups', async (req, res) => {
-    const groups = await db.all('SELECT * FROM community_groups');
-    res.json(groups);
-});
-
-// ----------------------------------------------------
-// LOGS
-// ----------------------------------------------------
-app.get('/api/logs', async (req, res) => {
-    try {
-        const notifs = await db.all('SELECT * FROM notifications ORDER BY id DESC LIMIT 10');
-        const logs = notifs.map(n => ({
-            id: n.id,
-            action: n.text,
-            timestamp: n.date,
-            status: n.type === 'error' ? 'error' : 'success'
-        }));
-        res.json(logs);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

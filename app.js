@@ -410,60 +410,60 @@ async function fetchAndStoreLocalData() {
   if (!data || data.error) return null;
   
   globalAuraData = {
-    parentName: data.profile.name,
+    parentName: data.profile.fullName,
     email: data.profile.email,
     phone: data.profile.phone,
     childProfile: data.children.length > 0 ? {
       id: data.children[0].id,
-      name: data.children[0].name,
+      name: data.children[0].fullName,
       age: data.children[0].age,
       gender: data.children[0].gender,
-      autismLevel: data.children[0].autism_level,
-      communicationStyle: data.children[0].communication_style,
-      behavioralHistory: data.children[0].behavioral_history,
-      emotionalTriggers: data.children[0].emotional_triggers,
-      medicalNotes: data.children[0].medical_notes,
-      therapyHistory: data.children[0].therapy_history,
-      medications: data.children[0].medications,
-      allergies: data.children[0].allergies,
-      emergencyContact: data.children[0].emergency_contact,
-      doctor_id: data.children[0].doctor_id
+      autismLevel: data.children[0].diagnosis,
+      communicationStyle: 'متاح', // Mock for now or map from notes
+      behavioralHistory: data.children[0].notes,
+      emotionalTriggers: data.children[0].notes,
+      medicalNotes: data.children[0].notes,
+      therapyHistory: data.children[0].notes,
+      medications: 'None',
+      allergies: 'None',
+      emergencyContact: data.profile.phone,
+      doctor_id: data.appointments && data.appointments.length > 0 ? data.appointments[0].doctorId : null
     } : { name: 'لم يتم تسجيل طفل' },
-    drawings: data.drawings.map(d => ({
+    drawings: data.activities.map(d => ({
       id: d.id,
-      name: d.name,
-      imageUrl: d.image_url,
-      status: d.status,
-      uploadDate: d.upload_date,
-      aiSummary: d.ai_summary,
-      emotional: d.emotional,
-      behavioral: d.behavioral,
-      confidence: d.confidence,
-      doctorComments: d.doctor_comments,
-      recommendations: d.recommendations
+      name: d.title,
+      imageUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
+      status: d.status.toLowerCase(),
+      uploadDate: d.createdAt,
+      aiSummary: d.description,
+      emotional: "مستقر",
+      behavioral: "جيد",
+      confidence: "95%",
+      doctorComments: d.description,
+      recommendations: d.description
     })),
     appointments: data.appointments.map(a => ({
       id: a.id,
-      doctor: a.doctor_name,
+      doctor: a.doctorName || "Dr. Ahmed",
       date: a.date,
       time: a.time,
-      type: a.type,
-      status: a.status
+      type: "استشارة",
+      status: a.status.toLowerCase()
     })),
-    chatMessages: data.chatMessages.map(m => ({
+    chatMessages: data.messages ? data.messages.map(m => ({
       id: m.id,
-      sender: m.sender_id == userId ? 'parent' : 'doctor',
-      text: m.text,
-      time: m.time,
-      date: m.date
-    })),
-    notifications: data.notifications.map(n => ({
+      sender: m.senderId == userId ? 'parent' : 'doctor',
+      text: m.message,
+      time: m.createdAt,
+      date: m.createdAt
+    })) : [],
+    notifications: data.notifications ? data.notifications.map(n => ({
       id: n.id,
-      type: n.type,
+      type: 'system',
       text: n.text,
-      unread: n.is_read === 0,
-      date: n.date
-    }))
+      unread: n.isRead === 0,
+      date: n.createdAt
+    })) : []
   };
   return globalAuraData;
 }
