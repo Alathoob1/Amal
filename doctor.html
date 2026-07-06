@@ -28,9 +28,9 @@
                 
                 // Set name
                 const navName = document.getElementById('doc-navbar-name');
-                if (navName) navName.textContent = doctorData.profile.name;
+                if (navName) navName.textContent = doctorData.profile.fullName;
                 const navAvatar = document.getElementById('doc-navbar-avatar');
-                if (navAvatar) navAvatar.textContent = doctorData.profile.name.charAt(0);
+                if (navAvatar) navAvatar.textContent = doctorData.profile.fullName.charAt(0);
                 
                 console.log("Logged in user id:", doctorId);
                 console.log("Doctor id:", doctorId);
@@ -862,8 +862,9 @@
             const statPatients = document.getElementById('stat-patients');
             if (statPatients) statPatients.textContent = doctorData.patients?.length || 0;
             
+            const pendingActivities = doctorData.activities?.filter(a => a.status === 'Pending') || [];
             const statPending = document.getElementById('stat-pending');
-            if (statPending) statPending.textContent = doctorData.pendingAnalyses?.length || 0;
+            if (statPending) statPending.textContent = pendingActivities.length;
             
             const statAppts = document.getElementById('stat-appointments');
             if (statAppts) statAppts.textContent = doctorData.appointments?.length || 0;
@@ -876,14 +877,14 @@
                 } else {
                     patientsTbody.innerHTML = doctorData.patients.map(p => `
                         <tr>
-                            <td style="font-weight: 600; color: var(--color-primary);">${p.name}</td>
+                            <td style="font-weight: 600; color: var(--color-primary);">${p.fullName}</td>
                             <td>${p.age || '-'} سنوات</td>
-                            <td><span class="badge-dynamic" style="background: rgba(226,125,96,0.15); color: #E27D60;">${p.autism_level || '-'}</span></td>
+                            <td><span class="badge-dynamic" style="background: rgba(226,125,96,0.15); color: #E27D60;">${p.diagnosis || '-'}</span></td>
                             <td>-</td>
                             <td>-</td>
                             <td>-</td>
                             <td><span style="color: #3B5E39; font-weight: 600; font-size: 0.85rem;">نشط</span></td>
-                            <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showPatientProfile('${p.name}')">فتح الملف</button></td>
+                            <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showPatientProfile('${p.fullName}')">فتح الملف</button></td>
                         </tr>
                     `).join('');
                 }
@@ -891,17 +892,17 @@
 
             // 3. Populate AI Analyses Reviews table
             const reviewsTbody = document.getElementById('doc-reviews-tbody');
-            if (reviewsTbody && doctorData.pendingAnalyses) {
-                if (doctorData.pendingAnalyses.length === 0) {
+            if (reviewsTbody && doctorData.activities) {
+                if (pendingActivities.length === 0) {
                     reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد تحليلات بانتظار المراجعة</td></tr>';
                 } else {
-                    reviewsTbody.innerHTML = doctorData.pendingAnalyses.map(d => `
+                    reviewsTbody.innerHTML = pendingActivities.map(d => `
                         <tr>
-                            <td style="font-weight: 600;">${d.child_name || 'طفل'}</td>
-                            <td>${d.upload_date}</td>
+                            <td style="font-weight: 600;">${d.childName || 'طفل'}</td>
+                            <td>${d.createdAt}</td>
                             <td><span class="badge-dynamic" style="background: rgba(144,180,242,0.15); color: #1D4ED8;">85%</span></td>
                             <td><span class="badge-dynamic badge-edit" style="color: #B7791F; background: rgba(255,193,7,0.15);">بانتظار المراجعة</span></td>
-                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('${d.child_name}')">مراجعة</button></td>
+                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('${d.childName}')">مراجعة</button></td>
                         </tr>
                     `).join('');
                 }
@@ -915,13 +916,13 @@
                 } else {
                     reportsTbody.innerHTML = doctorData.reports.map(r => `
                         <tr>
-                            <td>${r.date || '-'}</td>
-                            <td style="font-weight: 600;">${r.child_name || 'طفل'}</td>
+                            <td>${r.createdAt || '-'}</td>
+                            <td style="font-weight: 600;">${r.childName || 'طفل'}</td>
                             <td>-</td>
-                            <td><span class="badge-dynamic badge-ready">${r.status === 'pending' ? 'بانتظار المراجعة' : r.status}</span></td>
+                            <td><span class="badge-dynamic badge-ready">${r.status === 'pending' ? 'بانتظار المراجعة' : r.status || 'معتمد'}</span></td>
                             <td>
                                 <div class="action-btns">
-                                    <button class="btn-icon" title="عرض" onclick="showReportDetail('${r.child_name}', '${r.status}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                    <button class="btn-icon" title="عرض" onclick="showReportDetail('${r.childName}', '${r.status || 'approved'}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
                                 </div>
                             </td>
                         </tr>
@@ -936,7 +937,7 @@
                 const nameEl = document.getElementById('doc-profile-name');
                 const emailEl = document.getElementById('doc-profile-email');
                 const phoneEl = document.getElementById('doc-profile-phone');
-                if(nameEl) nameEl.textContent = doctorData.profile.name;
+                if(nameEl) nameEl.textContent = doctorData.profile.fullName;
                 if(emailEl) emailEl.value = doctorData.profile.email;
                 if(phoneEl) phoneEl.value = doctorData.profile.phone || 'غير مسجل';
             }

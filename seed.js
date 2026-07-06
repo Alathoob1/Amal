@@ -9,21 +9,24 @@ async function seed() {
         driver: sqlite3.Database
     });
 
+    console.log("Dropping existing tables...");
+    await db.exec(`
+        DROP TABLE IF EXISTS notifications;
+        DROP TABLE IF EXISTS activities;
+        DROP TABLE IF EXISTS messages;
+        DROP TABLE IF EXISTS reports;
+        DROP TABLE IF EXISTS appointments;
+        DROP TABLE IF EXISTS doctors;
+        DROP TABLE IF EXISTS children;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS drawings;
+        DROP TABLE IF EXISTS community_groups;
+        DROP TABLE IF EXISTS community_posts;
+    `);
+
     console.log("Initializing schema...");
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.exec(schema);
-
-    console.log("Clearing existing data...");
-    await db.exec(`
-        DELETE FROM notifications;
-        DELETE FROM activities;
-        DELETE FROM messages;
-        DELETE FROM reports;
-        DELETE FROM appointments;
-        DELETE FROM doctors;
-        DELETE FROM children;
-        DELETE FROM users;
-    `);
 
     // Helper functions
     const randomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];

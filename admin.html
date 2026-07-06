@@ -1876,10 +1876,10 @@
             countUp(document.getElementById('stat-children'), data.children);
             countUp(document.getElementById('stat-parents'), data.parents);
             countUp(document.getElementById('stat-doctors'), data.doctors);
-            countUp(document.getElementById('stat-new-analyses'), data.newAnalyses);
-            countUp(document.getElementById('stat-pending-reviews'), data.pendingReviews);
-            countUp(document.getElementById('stat-approved-reports'), data.approvedReports);
-            countUp(document.getElementById('stat-flags'), data.flags);
+            countUp(document.getElementById('stat-new-analyses'), data.pendingActivities || 0);
+            countUp(document.getElementById('stat-pending-reviews'), data.totalAppointments || 0);
+            countUp(document.getElementById('stat-approved-reports'), data.totalReports || 0);
+            countUp(document.getElementById('stat-flags'), 0);
 
             document.getElementById('quickTotal').textContent   = data.total;
             document.getElementById('quickDoctors').textContent = data.doctors;
@@ -1960,8 +1960,8 @@
             <tr>
                 <td>
                     <div class="user-cell">
-                        <div class="user-avatar avatar-${u.role}">${getInitials(u.name)}</div>
-                        <div class="user-name">${u.name}</div>
+                        <div class="user-avatar avatar-${u.role}">${getInitials(u.fullName || 'User')}</div>
+                        <div class="user-name">${u.fullName}</div>
                     </div>
                 </td>
                 <td style="color:var(--color-text-muted);font-size:0.88rem">${u.email}</td>
