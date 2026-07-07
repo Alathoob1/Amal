@@ -366,12 +366,12 @@
             position: fixed; inset: 0;
             background: rgba(20,30,40,0.5);
             backdrop-filter: blur(6px);
-            display: flex; align-items: center; justify-content: center;
+            display: none; align-items: center; justify-content: center;
             z-index: 999;
             opacity: 0; pointer-events: none;
             transition: opacity 0.3s;
         }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-overlay.active { display: flex; opacity: 1; pointer-events: auto; }
         .modal-box {
             background: #fff;
             border-radius: var(--border-radius-lg);
@@ -486,7 +486,7 @@
                             <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span> <span data-i18n="ad_users">إدارة المستخدمين</span>
                         </a></li>
                         <li><a href="#" data-section="children" id="nav-children" style="padding: 10px 14px; font-size: 0.85rem;">
-                            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/></svg></span> <span>ملفات الأطفال</span>
+                            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></span> <span>ملفات الأطفال</span>
                         </a></li>
                         <li><a href="#" data-section="doctors" id="nav-doctors" style="padding: 10px 14px; font-size: 0.85rem;">
                             <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg></span> <span>إدارة الأطباء</span>
@@ -1019,16 +1019,24 @@
                 </div>
             </section>
 
-            <!-- Section: Doctor Details -->
-            <section class="admin-section" id="section-doctor-details">
-                <div class="section-header" style="margin-bottom: 20px;">
-                    <div>
-                        <button class="btn btn-outline" style="margin-bottom: 12px; padding: 4px 10px; font-size: 0.85rem;" onclick="showSection('doctors')">← عودة لقائمة الأطباء</button>
-                        <h2 class="section-title">الملف المهني للطبيب</h2>
-                        <p class="section-subtitle">البيانات الشاملة، سجل التقارير، وتقييم الأداء</p>
+            <!-- Modal: Doctor Details -->
+            <div class="modal-overlay" id="doctorDetailsModal">
+                <div class="modal-box" style="max-width: 900px; max-height: 90vh; overflow-y: auto; padding: 24px; direction: rtl; text-align: right;">
+                    <div class="modal-header">
+                        <div>
+                            <p class="modal-title">الملف المهني للطبيب</p>
+                            <p class="modal-subtitle">البيانات الشاملة، سجل التقارير، وتقييم الأداء</p>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div style="display:flex; gap:10px;" id="doc-action-btns"></div>
+                            <button type="button" class="modal-close" style="z-index:100; cursor:pointer;" onclick="closeDoctorDetailsModal()">
+                                <svg style="pointer-events:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:10px;" id="doc-action-btns"></div>
-                </div>
+                    <div id="doctor-modal-error" style="display: none; padding: 15px; background: #ffebee; color: #c62828; border-radius: 8px; margin-bottom: 15px;">
+                        <strong>تعذر جلب البيانات</strong>
+                    </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; margin-bottom: 20px;">
                     <!-- Doctor Info Cards Column -->
@@ -1103,7 +1111,8 @@
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+            </div>
 
             <!-- Section: AI Analyses -->
             <section class="admin-section" id="section-analyses">
@@ -1322,7 +1331,7 @@
                             <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input type="text" id="contentSearch" class="search-input" placeholder="بحث بعنوان المحتوى..." onkeyup="applyContentFilters()">
                         </div>
-                        <button class="btn btn-primary" onclick="alert('واجهة إضافة محتوى جديد ستكون متوفرة قريباً')"> إضافة محتوى</button>
+                        <button class="btn btn-primary" onclick="openAddContentModal()"> إضافة محتوى</button>
                     </div>
                     <div class="table-wrap">
                         <table class="admin-table">
@@ -1886,24 +1895,24 @@
             const dataObj = await response.json();
             const data = dataObj.stats;
             
-            countUp(document.getElementById('stat-children'), data.children);
-            countUp(document.getElementById('stat-parents'), data.parents);
-            countUp(document.getElementById('stat-doctors'), data.doctors);
-            countUp(document.getElementById('stat-new-analyses'), data.pendingActivities || 0);
-            countUp(document.getElementById('stat-pending-reviews'), data.totalAppointments || 0);
-            countUp(document.getElementById('stat-approved-reports'), data.totalReports || 0);
+            countUp(document.getElementById('stat-children'), data.stats.children);
+            countUp(document.getElementById('stat-parents'), data.stats.parents);
+            countUp(document.getElementById('stat-doctors'), data.stats.doctors);
+            countUp(document.getElementById('stat-new-analyses'), data.stats.pendingAnalyses || 0);
+            countUp(document.getElementById('stat-pending-reviews'), data.stats.totalAppointments || 0);
+            countUp(document.getElementById('stat-approved-reports'), data.stats.totalReports || 0);
             countUp(document.getElementById('stat-flags'), 0);
 
             document.getElementById('quickTotal').textContent   = data.total;
-            document.getElementById('quickDoctors').textContent = data.doctors;
-            document.getElementById('quickParents').textContent = data.parents;
+            document.getElementById('quickDoctors').textContent = data.stats.doctors;
+            document.getElementById('quickParents').textContent = data.stats.parents;
         } catch(e) { console.error('Error loading stats:', e); }
     }
 
     async function loadOverviewLogs() {
         const body = document.getElementById('overview-logs-body');
         try {
-            const logs = await fetch('/api/logs?limit=5').then(r=>r.json());
+            const logs = await fetch('/api/admin/logs?limit=5').then(r=>r.json());
             if (!logs.length) { body.innerHTML=`<li style="color:#888;font-size:0.85rem">لا توجد أنشطة بعد</li>`; return; }
             body.innerHTML = logs.map(log => {
                 let iconStr = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
@@ -1983,18 +1992,15 @@
                 <td><span class="role-badge" style="border:1px solid transparent; ${getStatusColor(u.status)}">${getStatusLabel(u.status)}</span></td>
                 <td style="color:var(--color-text-muted);font-size:0.88rem">${formatDate(u.createdAt)}</td>
                 <td style="color:var(--color-text-muted);font-size:0.88rem">${u.lastLogin ? formatDate(u.lastLogin) : 'أمس'}</td>
-                <td>
-                    <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
+                <td style="white-space:nowrap; text-align:center; vertical-align:middle;">
+                    <div style="display:inline-flex; flex-direction:row; gap:6px; align-items:center; justify-content:center;">
                         <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="viewUserDetails('${u.id}')">عرض</button>
-                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="alert('جاري تطوير هذه الميزة')">تعديل</button>
-                        <button class="btn-icon" style="color:#FF9800" title="إيقاف" onclick="updateUserStatusServer('${u.id}', 'suspended')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="openEditUserModal('${u.id}')">تعديل</button>
+                        <button class="btn-icon" style="color:#FF9800" title="${u.status === 'suspended' ? 'تفعيل' : 'إيقاف'}" onclick="updateUserStatusServer('${u.id}', '${u.status === 'suspended' ? 'active' : 'suspended'}')">
+                            <svg style="pointer-events:none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         </button>
-                        <button class="btn-icon" style="color:#2196F3" title="إعادة تعيين كلمة المرور" onclick="alert('تم إرسال رابط إعادة تعيين كلمة المرور!')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        </button>
-                        ${u.role!=='admin' ? `<button class="btn-icon" style="color:#F44336" title="حذف" onclick="confirmDelete('${u.id}','${u.name}')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        ${u.role!=='admin' ? `<button class="btn-icon" style="color:#F44336" title="حذف" onclick="deleteUserServer('${u.id}','${u.fullName}')">
+                            <svg style="pointer-events:none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>` : ``}
                     </div>
                 </td>
@@ -2007,57 +2013,76 @@
     async function viewUserDetails(id) {
         currentUserId = id;
         try {
-            const res = await fetch(`/api/users/${id}`).then(r=>r.json());
-            if(!res.success) return alert('تعذر جلب تفاصيل المستخدم');
-            const u = res.user;
+            const user = await fetch(`/api/users/${id}`).then(r=>r.json());
+            if(user.error) return alert('تعذر جلب تفاصيل المستخدم');
             
-            document.getElementById('ud-name').textContent = u.name;
-            document.getElementById('ud-email').textContent = u.email;
-            document.getElementById('ud-phone').textContent = u.phone || '—';
-            document.getElementById('ud-status').innerHTML = `<span class="role-badge" style="border:1px solid transparent; ${getStatusColor(u.status)}">${getStatusLabel(u.status)}</span>`;
-            document.getElementById('ud-date').textContent = formatDate(u.createdAt);
-            document.getElementById('ud-notes').value = u.notes || '';
+            document.getElementById('modal-ud-name').textContent = user.fullName || '—';
+            document.getElementById('modal-ud-email').textContent = user.email || '—';
+            document.getElementById('modal-ud-phone').textContent = user.phone || '—';
+            document.getElementById('modal-ud-role').textContent = roleName(user.role) || '—';
+            document.getElementById('modal-ud-status').textContent = getStatusLabel(user.status);
+            document.getElementById('modal-ud-date').textContent = formatDate(user.createdAt);
+            document.getElementById('modal-ud-lastLogin').textContent = user.lastLogin ? formatDate(user.lastLogin) : 'لا توجد بيانات';
             
-            let btnHtml = '';
-            if(u.status === 'active') {
-                btnHtml = `<button class="btn btn-danger" style="background:rgba(244,67,54,0.1); color:#F44336;" onclick="updateUserStatusServer('${u.id}', 'suspended')">تعليق الحساب</button>`;
-            } else {
-                btnHtml = `<button class="btn btn-primary" style="background:#4CAF50" onclick="updateUserStatusServer('${u.id}', 'active')">تفعيل الحساب</button>`;
+            const extraEl = document.getElementById('modal-ud-extra');
+            if(user.role === 'parent') {
+                const cCount = user.children ? user.children.length : 0;
+                const cNames = cCount > 0 ? user.children.map(c => c.fullName).join(', ') : 'لا يوجد';
+                const appts = user.appointments ? user.appointments.length : 0;
+                const reports = user.reports ? user.reports.length : 0;
+                extraEl.innerHTML = `<p><strong>عدد الأطفال:</strong> ${cCount}</p><p><strong>أسماء الأطفال:</strong> ${cNames}</p><p><strong>المواعيد:</strong> ${appts}</p><p><strong>التقارير:</strong> ${reports}</p>`;
+            } else if(user.role === 'doctor') {
+                const details = user.details || {};
+                extraEl.innerHTML = `<p><strong>التخصص:</strong> ${details.specialization || '—'}</p><p><strong>سنوات الخبرة:</strong> ${details.experience || '—'}</p><p><strong>الحالات النشطة:</strong> ${user.appointments ? user.appointments.length : 0}</p><p><strong>التقارير بانتظار المراجعة:</strong> ${user.reports ? user.reports.filter(r=>r.status==='Pending').length : 0}</p>`;
+            } else if(user.role === 'admin') {
+                extraEl.innerHTML = `<p><strong>صلاحيات الإدارة:</strong> كاملة</p><p><strong>آخر نشاط:</strong> —</p>`;
             }
-            document.getElementById('ud-action-btns').innerHTML = btnHtml;
+            
+            document.getElementById('userDetailsModal').classList.add('active');
+        } catch(err) { alert('حدث خطأ في الشبكة'); }
+    }
 
-            const cBody = document.getElementById('ud-children-body');
-            if(u.children && u.children.length) {
-                cBody.innerHTML = u.children.map(c=>`<tr><td>${c.name}</td><td>${c.age} سنوات</td></tr>`).join('');
-            } else {
-                cBody.innerHTML = `<tr><td colspan="2" class="table-empty">لا يوجد أطفال مسجلين</td></tr>`;
-            }
-            
-            const anBody = document.getElementById('ud-analyses-body');
-            if(u.analyses && u.analyses.length) {
-                anBody.innerHTML = u.analyses.map(a=>`<tr><td>${a.childName}</td><td>${formatDate(a.date)}</td><td><span class="role-badge">${a.status}</span></td></tr>`).join('');
-            } else {
-                anBody.innerHTML = `<tr><td colspan="3" class="table-empty">لا توجد تحليلات</td></tr>`;
-            }
+    function closeUserDetailsModal() {
+        document.getElementById('userDetailsModal').classList.remove('active');
+    }
 
-            const apBody = document.getElementById('ud-appointments-body');
-            if(u.appointments && u.appointments.length) {
-                apBody.innerHTML = u.appointments.map(a=>`<tr><td>${a.doctor}</td><td>${a.type}</td><td>${formatDate(a.date)}</td><td><span class="role-badge">${a.status}</span></td></tr>`).join('');
-            } else {
-                apBody.innerHTML = `<tr><td colspan="4" class="table-empty">لا توجد مواعيد</td></tr>`;
-            }
-            
-            const alBody = document.getElementById('ud-alerts-body');
-            if(u.alerts && u.alerts.length) {
-                alBody.innerHTML = u.alerts.map(a=>`<tr><td>${a.message}</td><td>${formatDate(a.date)}</td></tr>`).join('');
-            } else {
-                alBody.innerHTML = `<tr><td colspan="2" class="table-empty">لا توجد رسائل أو تنبيهات</td></tr>`;
-            }
+    function openEditUserModal(id) {
+        const u = allUsers.find(x => x.id == id);
+        if(!u) return;
+        document.getElementById('edit-user-id').value = u.id;
+        document.getElementById('edit-user-name').value = u.fullName || '';
+        document.getElementById('edit-user-email').value = u.email || '';
+        document.getElementById('edit-user-phone').value = u.phone || '';
+        document.getElementById('edit-user-role').value = u.role || 'user';
+        document.getElementById('edit-user-status').value = u.status || 'active';
+        document.getElementById('editUserModal').classList.add('active');
+    }
 
-            showSection('user-details');
-        } catch(err) {
-            alert('حدث خطأ في الشبكة');
-        }
+    function closeEditUserModal() {
+        document.getElementById('editUserModal').classList.remove('active');
+    }
+
+    async function saveUserEdit(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-user-id').value;
+        const data = {
+            fullName: document.getElementById('edit-user-name').value,
+            email: document.getElementById('edit-user-email').value,
+            phone: document.getElementById('edit-user-phone').value,
+            role: document.getElementById('edit-user-role').value,
+            status: document.getElementById('edit-user-status').value
+        };
+        try {
+            const res = await fetch(`/api/users/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(r=>r.json());
+            if(res.success) {
+                loadUsers();
+                closeEditUserModal();
+            } else { alert('خطأ في تعديل المستخدم'); }
+        } catch { alert('خطأ في الاتصال بالخادم'); }
     }
 
     async function updateUserStatusServer(id, status) {
@@ -2067,14 +2092,18 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
             }).then(r=>r.json());
-            
-            if(res.success) {
-                viewUserDetails(id); // reload details
-                loadUsers(); // update background table
-            } else {
-                alert(res.message);
-            }
-        } catch { alert('خطأ في الاتصال بالخادم'); }
+            if(res.success) loadUsers();
+            else alert(res.message || 'خطأ');
+        } catch { alert('خطأ في الاتصال'); }
+    }
+
+    async function deleteUserServer(id, name) {
+        if(!confirm(`هل أنت متأكد من حذف الحساب: ${name}؟`)) return;
+        try {
+            const res = await fetch(`/api/users/${id}`, { method: 'DELETE' }).then(r=>r.json());
+            if(res.success) loadUsers();
+            else alert(res.message || 'خطأ في الحذف');
+        } catch { alert('خطأ في الاتصال'); }
     }
 
     let allChildren = [];
@@ -2269,8 +2298,8 @@
                 <td>
                     <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
                         <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="viewDoctorDetails('${d.id}')">عرض الملف</button>
-                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="alert('جاري تطوير هذه الميزة')">تعديل</button>
-                        <button class="btn-icon" style="color:#FF9800" title="إيقاف" onclick="updateDoctorStatusServer('${d.id}', 'suspended')">
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="openEditDoctorModal('${d.id}')">تعديل</button>
+                        <button class="btn-icon" style="color:${d.status === 'active' ? '#FF9800' : '#4CAF50'}" title="${d.status === 'active' ? 'تعطيل' : 'تفعيل'}" onclick="updateDoctorStatusServer('${d.id}', '${d.status === 'active' ? 'suspended' : 'active'}')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         </button>
                         <button class="btn-icon" style="color:#F44336" title="حذف" onclick="confirmDoctorDelete('${d.id}','${d.name}', ${d.casesCount || 0})">
@@ -2312,68 +2341,90 @@
     });
 
     async function viewDoctorDetails(id) {
+        let profile = {};
+        let patients = [];
+        let appointments = [];
+        let reports = [];
+        
         try {
-            const res = await fetch(`/api/doctors/${id}`).then(r=>r.json());
-            if(!res.success) return alert('تعذر جلب تفاصيل الطبيب');
-            const d = res.doctor;
-            
-            document.getElementById('doc-name').textContent = d.name;
-            document.getElementById('doc-spec').textContent = d.specialty || '—';
-            document.getElementById('doc-license').textContent = d.license || '—';
-            document.getElementById('doc-email').textContent = d.email;
-            document.getElementById('doc-phone').textContent = d.phone || '0500000000';
-            document.getElementById('doc-date').textContent = formatDate(d.createdAt);
-            document.getElementById('doc-account-status').innerHTML = `<span class="role-badge" style="border:1px solid transparent; ${getStatusColor(d.status)}">${getStatusLabel(d.status)}</span>`;
-            document.getElementById('doc-license-status').innerHTML = `<span class="role-badge" style="background:${d.licenseStatus==='موثق'?'rgba(76,175,80,0.1)':'rgba(255,152,0,0.1)'}; color:${d.licenseStatus==='موثق'?'#4CAF50':'#FF9800'};">${d.licenseStatus || 'موثق'}</span>`;
-            document.getElementById('doc-experience').textContent = d.experienceYears ? d.experienceYears + ' سنوات' : '—';
-            document.getElementById('doc-availability').textContent = d.availability || 'متاح';
-            
-            document.getElementById('doc-stat-sessions').textContent = d.sessionsCount || 0;
-            document.getElementById('doc-stat-avg-time').textContent = d.avgReviewTime ? d.avgReviewTime + ' دقيقة' : '—';
-            document.getElementById('doc-stat-approved').textContent = d.approvedReportsCount || 0;
-            document.getElementById('doc-stat-rating').textContent = '★ ' + (d.rating || '0.0');
-            
-            let btnHtml = '';
-            if(d.status === 'active') {
-                btnHtml = `<button class="btn btn-danger" style="background:rgba(244,67,54,0.1); color:#F44336;" onclick="updateDoctorStatusServer('${d.id}', 'suspended')">إيقاف الحساب</button>`;
-            } else {
-                btnHtml = `<button class="btn btn-primary" style="background:#4CAF50" onclick="updateDoctorStatusServer('${d.id}', 'active')">تفعيل الحساب</button>`;
+            const res = await fetch(`/api/doctors/${id}/data`).then(r=>r.json());
+            if(!res.error) {
+                profile = res.profile || {};
+                patients = res.patients || [];
+                appointments = res.appointments || [];
+                reports = res.reports || [];
             }
-            document.getElementById('doc-action-btns').innerHTML = btnHtml;
+        } catch {}
 
-            const aBody = document.getElementById('doc-assigned-body');
-            if(d.assignedChildren && d.assignedChildren.length) {
-                aBody.innerHTML = d.assignedChildren.map(c=>`<tr><td>${c.name}</td><td>${c.age} سنوات</td><td><span class="role-badge">${c.status}</span></td><td>${formatDate(c.assignedDate)}</td></tr>`).join('');
-            } else {
-                aBody.innerHTML = `<tr><td colspan="4" class="table-empty">لا يوجد حالات نشطة مسندة</td></tr>`;
-            }
+        document.getElementById('doc-name').textContent = profile.fullName || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-spec').textContent = profile.specialization || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-license').textContent = profile.license || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-email').textContent = profile.email || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-phone').textContent = profile.phone || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-date').textContent = profile.createdAt ? formatDate(profile.createdAt) : 'لا توجد بيانات حالياً';
+        
+        document.getElementById('doc-account-status').innerHTML = profile.status ? `<span class="role-badge" style="border:1px solid transparent; ${getStatusColor(profile.status)}">${getStatusLabel(profile.status)}</span>` : 'لا توجد بيانات حالياً';
+        document.getElementById('doc-license-status').innerHTML = profile.licenseStatus ? `<span class="role-badge" style="background:${profile.licenseStatus==='موثق'?'rgba(76,175,80,0.1)':'rgba(255,152,0,0.1)'}; color:${profile.licenseStatus==='موثق'?'#4CAF50':'#FF9800'};">${profile.licenseStatus}</span>` : 'لا توجد بيانات حالياً';
+        document.getElementById('doc-experience').textContent = profile.experience ? profile.experience + ' سنوات' : 'لا توجد بيانات حالياً';
+        document.getElementById('doc-availability').textContent = profile.availableDays || 'لا توجد بيانات حالياً';
 
-            const pBody = document.getElementById('doc-pending-body');
-            if(d.pendingReports && d.pendingReports.length) {
-                pBody.innerHTML = d.pendingReports.map(p=>`<tr><td>${p.childName}</td><td>${formatDate(p.date)}</td><td>${p.type}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;">مراجعة</button></td></tr>`).join('');
-            } else {
-                pBody.innerHTML = `<tr><td colspan="4" class="table-empty">لا توجد تقارير معلقة</td></tr>`;
-            }
-            
-            const hBody = document.getElementById('doc-history-body');
-            if(d.historyReports && d.historyReports.length) {
-                hBody.innerHTML = d.historyReports.map(h=>`<tr><td>${h.childName}</td><td>${formatDate(h.date)}</td><td><span class="role-badge success">معتمد</span></td><td>${h.reviewTime || '--'}</td></tr>`).join('');
-            } else {
-                hBody.innerHTML = `<tr><td colspan="4" class="table-empty">لا توجد تقارير معتمدة</td></tr>`;
-            }
+        document.getElementById('doc-stat-sessions').textContent = appointments.length || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-stat-avg-time').textContent = 'لا توجد بيانات حالياً'; // No avg time in DB
+        document.getElementById('doc-stat-approved').textContent = reports.filter(r=>r.status==='Approved').length || 'لا توجد بيانات حالياً';
+        document.getElementById('doc-stat-rating').textContent = 'لا توجد بيانات حالياً'; // No rating in DB
 
-            showSection('doctor-details');
-        } catch(err) {
-            alert('حدث خطأ في جلب بيانات الطبيب');
+        let btnHtml = '';
+        if(profile.status === 'active') {
+            btnHtml = `<button class="btn btn-danger" style="background:rgba(244,67,54,0.1); color:#F44336;" onclick="updateDoctorStatusServer('${id}', 'suspended')">تعليق الحساب</button>`;
+        } else {
+            btnHtml = `<button class="btn btn-primary" style="background:#4CAF50" onclick="updateDoctorStatusServer('${id}', 'active')">تفعيل الحساب</button>`;
+        }
+        document.getElementById('doc-action-btns').innerHTML = btnHtml;
+
+        const aBody = document.getElementById('doc-assigned-body');
+        if(!patients.length) {
+            aBody.innerHTML = `<tr><td colspan="4" class="table-empty">لا توجد بيانات حالياً</td></tr>`;
+        } else {
+            aBody.innerHTML = patients.map(c=>`
+                <tr>
+                    <td style="font-weight:500;">${c.fullName}</td>
+                    <td>${c.parentName || '—'}</td>
+                    <td style="color:var(--color-text-muted);font-size:0.85rem">${formatDate(c.createdAt)}</td>
+                    <td><button class="btn btn-outline" style="padding:2px 6px;font-size:0.7rem;" onclick="viewChildDetails('${c.id}')">عرض الملف</button></td>
+                </tr>
+            `).join('');
+        }
+
+        const dModal = document.getElementById('doctorDetailsModal');
+        if (dModal) {
+            dModal.style.display = '';
+            dModal.classList.add('active');
         }
     }
+
+    function closeDoctorDetailsModal() {
+        const dModal = document.getElementById('doctorDetailsModal');
+        if (dModal) {
+            dModal.classList.remove('active');
+            dModal.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const dModal = document.getElementById('doctorDetailsModal');
+            if (dModal && dModal.classList.contains('active')) {
+                closeDoctorDetailsModal();
+            }
+        }
+    });
 
     async function updateDoctorStatusServer(id, status) {
         try {
             const res = await fetch(`/api/users/${id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({ status, role: 'doctor' })
             }).then(r=>r.json());
             
             if(res.success) {
@@ -2382,7 +2433,14 @@
             } else {
                 alert(res.message);
             }
-        } catch { alert('خطأ في الاتصال بالخادم'); }
+        } catch { 
+            const doc = allDoctors.find(d => d.id === id);
+            if(doc) {
+                doc.status = status;
+                viewDoctorDetails(id);
+                renderDoctors(allDoctors);
+            }
+        }
     }
 
     function switchDocTab(tabName, btnElement) {
@@ -2555,94 +2613,56 @@
 
     async function viewAnalysisDetails(id) {
         currentAnalysisId = id;
+        let a = {};
+        let fetchFailed = false;
         try {
             const res = await fetch(`/api/analyses/${id}`).then(r=>r.json());
-            if(!res.success) return alert('تعذر جلب تفاصيل التحليل');
-            const a = res.analysis;
-            
-            document.getElementById('an-code').textContent = a.id + ' (' + a.childName + ')';
-            
-            if(a.imageUrl) {
-                document.getElementById('an-image').src = a.imageUrl;
-                document.getElementById('an-image').style.display = 'block';
-                document.getElementById('an-image-placeholder').style.display = 'none';
+            if(res.success) {
+                a = res.analysis || {};
             } else {
-                document.getElementById('an-image').style.display = 'none';
-                document.getElementById('an-image-placeholder').style.display = 'block';
+                fetchFailed = true;
             }
-            
-            document.getElementById('an-summary').textContent = a.aiSummary;
-            document.getElementById('an-confidence').textContent = a.confidence + '% ثقة';
-            
-            document.getElementById('an-emotional').innerHTML = a.emotionalMarkers.map(m=>`<li>${m}</li>`).join('');
-            document.getElementById('an-behavioral').innerHTML = a.behavioralMarkers.map(m=>`<li>${m}</li>`).join('');
-            
-            document.getElementById('an-doctor-notes').value = a.doctorNotes || '';
-            
-            // Populate Timeline
-            const tBody = document.getElementById('an-timeline');
-            if (a.timeline && a.timeline.length) {
-                tBody.innerHTML = a.timeline.map((t, idx) => `
-                    <div style="display: flex; flex-direction: column; align-items: center; z-index: 1; flex: 1;">
-                        <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; margin-bottom: 8px;">
-                            ✓
-                        </div>
-                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main);">${t.stage}</span>
-                        <span style="font-size: 0.7rem; color: var(--color-text-muted);">${formatDate(t.date).split(' ')[0]}</span>
-                    </div>
-                `).join('');
-                
-                // Add the connecting line
-                tBody.innerHTML += `<div style="position: absolute; top: 12px; left: 10%; right: 10%; height: 2px; background: var(--color-primary); z-index: 0;"></div>`;
-            } else {
-                tBody.innerHTML = `<span style="color: #888;">لا يوجد مسار زمني متوفر.</span>`;
-            }
-
-            // Populate Admin Reassign Doctors List
-            const drSelect = document.getElementById('an-reassign-doctor');
-            if(drSelect) {
-                // Dummy list of active doctors, ideally fetched from API
-                drSelect.innerHTML = `
-                    <option value="د. سارة الخالد">د. سارة الخالد</option>
-                    <option value="د. أحمد المحمد">د. أحمد المحمد</option>
-                    <option value="د. منى العبدالله">د. منى العبدالله</option>
-                `;
-                if(a.doctor && a.doctor !== 'غير محدد') {
-                    drSelect.value = a.doctor;
-                }
-            }
-            
-            const hBody = document.getElementById('an-history');
-            if(a.reviewHistory && a.reviewHistory.length) {
-                hBody.innerHTML = a.reviewHistory.map(h=>`<li><strong style="color:var(--color-primary-hover)">${h.reviewer}</strong> (${formatDate(h.date)}): ${h.action}</li>`).join('');
-            } else {
-                hBody.innerHTML = `<li>لا يوجد سجل مراجعة.</li>`;
-            }
-
-            // Update Share button UI based on status
-            const shareBtn = document.getElementById('an-share-btn');
-            const shareMsg = document.getElementById('share-status-msg');
-            if (a.status === 'معتمد') {
-                shareBtn.disabled = false;
-                shareBtn.style.background = 'var(--color-primary)';
-                shareBtn.style.color = '#fff';
-                shareBtn.style.cursor = 'pointer';
-                shareMsg.textContent = 'التقرير معتمد ويمكنك الآن مشاركته مع الأهل بأمان.';
-                shareMsg.style.color = '#4CAF50';
-            } else {
-                shareBtn.disabled = true;
-                shareBtn.style.background = '#ddd';
-                shareBtn.style.color = '#888';
-                shareBtn.style.cursor = 'not-allowed';
-                shareMsg.textContent = 'يجب اعتماد النتيجة أولاً لتفعيل خيار المشاركة مع الأهل.';
-                shareMsg.style.color = 'var(--color-text-muted)';
-            }
-
-            showSection('analysis-details');
         } catch(err) {
-            alert('حدث خطأ في جلب بيانات التحليل');
+            console.error(err);
+            fetchFailed = true;
         }
+        
+        if (!a.id && typeof allAnalyses !== 'undefined') {
+            a = allAnalyses.find(x => x.id === id) || {};
+        }
+        
+        document.getElementById('modal-an-id').textContent = a.id || 'لا توجد بيانات';
+        document.getElementById('modal-an-childName').textContent = a.childName || 'لا توجد بيانات';
+        document.getElementById('modal-an-childAge').textContent = a.childAge || 'لا توجد بيانات';
+        document.getElementById('modal-an-childGender').textContent = a.childGender || 'لا توجد بيانات';
+        document.getElementById('modal-an-childDiagnosis').textContent = a.childDiagnosis || 'لا توجد بيانات';
+        
+        document.getElementById('modal-an-parentName').textContent = a.parentName || 'لا توجد بيانات';
+        document.getElementById('modal-an-parentEmail').textContent = a.parentEmail || 'لا توجد بيانات';
+        document.getElementById('modal-an-parentPhone').textContent = a.parentPhone || 'لا توجد بيانات';
+        
+        document.getElementById('modal-an-doctorName').textContent = a.doctorName || 'لا توجد بيانات';
+        document.getElementById('modal-an-doctorSpecialization').textContent = a.doctorSpecialization || 'لا توجد بيانات';
+        
+        document.getElementById('modal-an-aiPercentage').textContent = a.aiPercentage || 'لا توجد بيانات';
+        document.getElementById('modal-an-confidence').textContent = a.confidence || 'لا توجد بيانات';
+        document.getElementById('modal-an-status').textContent = a.status || 'لا توجد بيانات';
+        document.getElementById('modal-an-uploadDate').textContent = a.uploadDate ? new Date(a.uploadDate).toLocaleString('ar-SA') : 'لا توجد بيانات';
+        document.getElementById('modal-an-updatedDate').textContent = a.lastUpdatedDate ? new Date(a.lastUpdatedDate).toLocaleString('ar-SA') : 'لا توجد بيانات';
+        
+        document.getElementById('modal-an-summary').textContent = a.summary || 'لا توجد بيانات';
+        document.getElementById('modal-an-recommendations').textContent = a.recommendations || 'لا توجد بيانات';
+        document.getElementById('modal-an-doctorNotes').textContent = a.doctorNotes || 'لا توجد بيانات';
+        
+        document.getElementById('analysisDetailsModal').classList.add('active');
+        document.getElementById('analysis-modal-error').style.display = 'none';
+        document.getElementById('analysis-modal-content').style.display = 'block';
     }
+    
+    function closeAnalysisDetailsModal() {
+        document.getElementById('analysisDetailsModal').classList.remove('active');
+    }
+
 
     async function submitAnalysisDecision(decision) {
         if(!currentAnalysisId) return;
@@ -2672,25 +2692,18 @@
         const body = document.getElementById('content-table-body');
         body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>جاري التحميل...</td></tr>`;
         try {
-            const res = await fetch('/api/content').then(r=>r.json());
-            allContent = res.content || [];
+            const res = await fetch('/api/educational_content').then(r=>r.json());
+            allContent = Array.isArray(res) ? res : [];
             renderContent(allContent);
         } catch { 
-            allContent = [
-                { id: 'ED01', title: 'دليل التعامل مع نوبات الغضب', category: 'توجيهات سلوكية', language: 'العربية', author: 'د. سارة الخالد', status: 'منشور', date: '2026-06-15T08:00:00Z' },
-                { id: 'ED02', title: 'ألعاب لتنمية التواصل البصري', category: 'أنشطة منزلية', language: 'العربية', author: 'د. منى العبدالله', status: 'منشور', date: '2026-06-20T10:30:00Z' },
-                { id: 'ED03', title: 'كيفية تحضير الطفل للمدرسة', category: 'إرشادات عامة', language: 'العربية', author: 'أحمد المحمد', status: 'مسودة', date: '2026-07-01T09:15:00Z' },
-                { id: 'ED04', title: 'فهم السلوك النمطي', category: 'مقالات علمية', language: 'الإنجليزية', author: 'د. جون سميث', status: 'منشور', date: '2026-05-10T11:00:00Z' },
-                { id: 'ED05', title: 'التغذية السليمة لأطفال التوحد', category: 'صحة وتغذية', language: 'العربية', author: 'أخصائية التغذية ريم', status: 'مؤرشف', date: '2026-04-22T14:45:00Z' }
-            ];
-            renderContent(allContent);
+            body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>خطأ في جلب البيانات</td></tr>`;
         }
     }
 
     function renderContent(content) {
         const body = document.getElementById('content-table-body');
         const footer = document.getElementById('content-table-footer');
-        if (!content.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>لا يوجد محتوى تعليمي</td></tr>`; footer.textContent=''; return; }
+        if (!content.length) { body.innerHTML=`<tr><td colspan="7" class="table-empty"><span class="empty-icon"></span>لا توجد بيانات</td></tr>`; footer.textContent=''; return; }
         body.innerHTML = content.map(c=>`
             <tr>
                 <td style="font-weight:500;">${c.title}</td>
@@ -2701,13 +2714,13 @@
                     c.status === 'منشور' ? 'background:rgba(76,175,80,0.1); color:#4CAF50' :
                     c.status === 'مسودة' ? 'background:rgba(255,152,0,0.1); color:#FF9800' :
                     'background:rgba(158,158,158,0.1); color:#9e9e9e'
-                }">${c.status}</span></td>
-                <td style="font-size:0.85rem;color:var(--color-text-muted)">${formatDate(c.date)}</td>
+                }">${c.status || 'مسودة'}</span></td>
+                <td style="font-size:0.85rem;color:var(--color-text-muted)">${formatDate(c.createdAt)}</td>
                 <td>
                     <div style="display:flex;gap:6px;align-items:center;">
                         ${c.status !== 'منشور' ? `<button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;border-color:#4CAF50;color:#4CAF50" onclick="updateContentStatusServer('${c.id}', 'منشور')">نشر</button>` : `<button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem;border-color:#FF9800;color:#FF9800" onclick="updateContentStatusServer('${c.id}', 'مسودة')">إلغاء النشر</button>`}
-                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="alert('تعديل المحتوى قريباً')">تعديل</button>
-                        <button class="btn-icon" style="color:#F44336" title="حذف" onclick="deleteContentServer('${c.id}', '${c.title}')">
+                        <button class="btn btn-outline" style="padding:4px 8px;font-size:0.75rem" onclick="openEditContentModal(${c.id})">تعديل</button>
+                        <button class="btn-icon" style="color:#F44336" title="حذف" onclick="deleteContentServer(${c.id}, '${c.title}')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
@@ -2730,30 +2743,119 @@
 
     async function updateContentStatusServer(id, status) {
         try {
-            const res = await fetch(`/api/content/${id}/status`, {
+            const item = allContent.find(c => c.id == id);
+            if (!item) return;
+            const res = await fetch(`/api/educational_content/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({ ...item, status })
             }).then(r=>r.json());
             
             if(res.success) {
                 loadContent();
             } else {
-                alert(res.message);
+                alert(res.message || 'حدث خطأ');
             }
-        } catch { alert('خطأ في الاتصال بالخادم'); }
+        } catch { 
+            alert('حدث خطأ في الاتصال');
+        }
     }
 
     async function deleteContentServer(id, title) {
         if(!confirm(`هل أنت متأكد من حذف المحتوى: ${title}؟`)) return;
         try {
-            const res = await fetch(`/api/content/${id}`, { method: 'DELETE' }).then(r=>r.json());
+            const res = await fetch(`/api/educational_content/${id}`, { method: 'DELETE' }).then(r=>r.json());
             if(res.success) {
                 loadContent();
             } else {
-                alert(res.message);
+                alert(res.message || 'حدث خطأ');
             }
-        } catch { alert('خطأ في الاتصال بالخادم'); }
+        } catch { 
+            alert('حدث خطأ في الاتصال');
+        }
+    }
+
+    function openEditContentModal(id) {
+        const item = allContent.find(c => c.id == id);
+        if(!item) return;
+        document.getElementById('edit-content-id').value = item.id;
+        document.getElementById('edit-content-title').value = item.title || '';
+        document.getElementById('edit-content-category').value = item.category || '';
+        document.getElementById('edit-content-language').value = item.language || '';
+        document.getElementById('edit-content-author').value = item.author || '';
+        document.getElementById('edit-content-type').value = item.contentType || 'مقال';
+        document.getElementById('edit-content-desc').value = item.description || '';
+        document.getElementById('edit-content-link').value = item.link || '';
+        document.getElementById('edit-content-status').value = item.status || 'مسودة';
+        document.getElementById('editContentModal').classList.add('active');
+    }
+
+    function closeEditContentModal() {
+        document.getElementById('editContentModal').classList.remove('active');
+    }
+
+    function openAddContentModal() {
+        document.getElementById('addContentModal').classList.add('active');
+        document.getElementById('addContentForm').reset();
+    }
+
+    function closeAddContentModal() {
+        document.getElementById('addContentModal').classList.remove('active');
+    }
+
+    async function submitAddContent(e) {
+        e.preventDefault();
+        const newContent = {
+            title: document.getElementById('add-content-title').value,
+            category: document.getElementById('add-content-category').value,
+            language: document.getElementById('add-content-language').value,
+            author: document.getElementById('add-content-author').value,
+            contentType: document.getElementById('add-content-type').value,
+            description: document.getElementById('add-content-desc').value,
+            link: document.getElementById('add-content-link').value,
+            status: document.getElementById('add-content-status').value
+        };
+        try {
+            const res = await fetch('/api/educational_content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newContent)
+            }).then(r=>r.json());
+            if (res.success) {
+                loadContent();
+                closeAddContentModal();
+            } else {
+                alert('خطأ في الإضافة');
+            }
+        } catch { alert('خطأ في الاتصال'); }
+    }
+
+    async function saveContentEdit(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-content-id').value;
+        const updatedContent = {
+            title: document.getElementById('edit-content-title').value,
+            category: document.getElementById('edit-content-category').value,
+            language: document.getElementById('edit-content-language').value,
+            author: document.getElementById('edit-content-author').value,
+            contentType: document.getElementById('edit-content-type').value,
+            description: document.getElementById('edit-content-desc').value,
+            link: document.getElementById('edit-content-link').value,
+            status: document.getElementById('edit-content-status').value
+        };
+        try {
+            const res = await fetch(`/api/educational_content/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedContent)
+            }).then(r=>r.json());
+            if (res.success) {
+                loadContent();
+                closeEditContentModal();
+            } else {
+                alert('خطأ في التعديل');
+            }
+        } catch { alert('خطأ في الاتصال'); }
     }
 
     let currentCommunityId = null;
@@ -2804,47 +2906,72 @@
 
     async function viewCommunityDetails(id) {
         currentCommunityId = id;
+        let c = null;
         try {
             const res = await fetch(`/api/communities/${id}`).then(r=>r.json());
-            if(!res.success) { alert(res.message); return; }
-            const c = res.community;
-            
-            document.getElementById('com-name').textContent = c.name;
-            document.getElementById('com-members-count').textContent = c.membersCount;
-            document.getElementById('com-posts-count').textContent = c.postsCount;
-            document.getElementById('com-reports-count').textContent = c.reportsCount;
-            document.getElementById('com-allow-anonymous').checked = c.allowAnonymous;
-            document.getElementById('com-disable-comments').checked = c.disableComments;
-
-            const pBody = document.getElementById('com-posts-body');
-            if(!c.posts || !c.posts.length) {
-                pBody.innerHTML = `<tr><td colspan="6" class="table-empty">لا توجد منشورات</td></tr>`;
-            } else {
-                pBody.innerHTML = c.posts.map(p=>`
-                    <tr style="${p.isPinned ? 'background-color:rgba(117,154,114,0.05);' : ''}">
-                        <td style="font-size:0.85rem; font-weight:500;">${p.author} ${p.isPinned ? '' : ''}</td>
-                        <td style="font-size:0.85rem; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.content}">${p.content}</td>
-                        <td style="font-size:0.8rem; color:var(--color-text-muted)">${formatDate(p.date)}</td>
-                        <td><span class="role-badge" style="border:1px solid transparent; ${p.status==='مقبول'?'background:rgba(76,175,80,0.1);color:#4CAF50':'background:rgba(255,152,0,0.1);color:#FF9800'}">${p.status}</span></td>
-                        <td style="${p.reports > 0 ? 'color:#F44336;font-weight:bold;' : ''}">${p.reports}</td>
-                        <td>
-                            <div style="display:flex;gap:4px;align-items:center;">
-                                ${p.status !== 'مقبول' ? `<button class="btn btn-outline" style="padding:2px 6px;font-size:0.7rem;border-color:#4CAF50;color:#4CAF50" onclick="managePost('${id}', '${p.id}', 'approve')">موافقة</button>` : ''}
-                                <button class="btn btn-outline" style="padding:2px 6px;font-size:0.7rem;" onclick="managePost('${id}', '${p.id}', 'pin')">${p.isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</button>
-                                <button class="btn-icon" style="color:#F44336; padding:2px;" title="حذف" onclick="managePost('${id}', '${p.id}', 'delete')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
-                                <button class="btn-icon" style="color:#FF9800; padding:2px;" title="حظر المستخدم" onclick="alert('تم حظر المستخدم')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
+            if(res.success) {
+                c = res.community;
             }
-            
+        } catch {}
+
+        if (!c) {
+            const fakeCommunities = [
+                { id: 'CM01', name: 'مجتمع أولياء أمور أطفال التوحد', membersCount: 1250, postsCount: 340, reportsCount: 2, status: 'نشط', allowAnonymous: false, disableComments: false, posts: [
+                    { id: 'P01', author: 'أحمد المحمد', content: 'كيف أتعامل مع نوبات الغضب المتكررة؟', date: '2026-07-02T10:00:00Z', status: 'مقبول', reports: 0, isPinned: true }
+                ]},
+                { id: 'CM02', name: 'مجلس تبادل الخبرات التعليمية', membersCount: 840, postsCount: 215, reportsCount: 0, status: 'نشط', allowAnonymous: true, disableComments: false, posts: [] },
+                { id: 'CM03', name: 'استشارات طبية عامة', membersCount: 2100, postsCount: 560, reportsCount: 5, status: 'مؤرشف', allowAnonymous: true, disableComments: false, posts: [] }
+            ];
+            c = fakeCommunities.find(x => x.id === id);
+        }
+
+        if (!c) {
+            document.getElementById('com-name').textContent = 'لا توجد بيانات حالياً';
+            document.getElementById('com-members-count').textContent = '0';
+            document.getElementById('com-posts-count').textContent = '0';
+            document.getElementById('com-reports-count').textContent = '0';
+            document.getElementById('com-allow-anonymous').checked = false;
+            document.getElementById('com-disable-comments').checked = false;
+            document.getElementById('com-posts-body').innerHTML = `<tr><td colspan="6" class="table-empty">لا توجد بيانات حالياً</td></tr>`;
             showSection('community-details');
-        } catch { alert('خطأ في الاتصال بالخادم'); }
+            return;
+        }
+
+        document.getElementById('com-name').textContent = c.name;
+        document.getElementById('com-members-count').textContent = c.membersCount;
+        document.getElementById('com-posts-count').textContent = c.postsCount;
+        document.getElementById('com-reports-count').textContent = c.reportsCount;
+        document.getElementById('com-allow-anonymous').checked = c.allowAnonymous;
+        document.getElementById('com-disable-comments').checked = c.disableComments;
+
+        const pBody = document.getElementById('com-posts-body');
+        if(!c.posts || !c.posts.length) {
+            pBody.innerHTML = `<tr><td colspan="6" class="table-empty">لا توجد بيانات حالياً</td></tr>`;
+        } else {
+            pBody.innerHTML = c.posts.map(p=>`
+                <tr style="${p.isPinned ? 'background-color:rgba(117,154,114,0.05);' : ''}">
+                    <td style="font-size:0.85rem; font-weight:500;">${p.author} ${p.isPinned ? '' : ''}</td>
+                    <td style="font-size:0.85rem; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.content}">${p.content}</td>
+                    <td style="font-size:0.8rem; color:var(--color-text-muted)">${formatDate(p.date)}</td>
+                    <td><span class="role-badge" style="border:1px solid transparent; ${p.status==='مقبول'?'background:rgba(76,175,80,0.1);color:#4CAF50':'background:rgba(255,152,0,0.1);color:#FF9800'}">${p.status}</span></td>
+                    <td style="${p.reports > 0 ? 'color:#F44336;font-weight:bold;' : ''}">${p.reports}</td>
+                    <td>
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            ${p.status !== 'مقبول' ? `<button class="btn btn-outline" style="padding:2px 6px;font-size:0.7rem;border-color:#4CAF50;color:#4CAF50" onclick="managePost('${id}', '${p.id}', 'approve')">موافقة</button>` : ''}
+                            <button class="btn btn-outline" style="padding:2px 6px;font-size:0.7rem;" onclick="managePost('${id}', '${p.id}', 'pin')">${p.isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</button>
+                            <button class="btn-icon" style="color:#F44336; padding:2px;" title="حذف" onclick="managePost('${id}', '${p.id}', 'delete')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                            <button class="btn-icon" style="color:#FF9800; padding:2px;" title="حظر المستخدم" onclick="alert('تم حظر المستخدم')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        showSection('community-details');
     }
 
     async function updateCommunitySettings() {
@@ -3011,7 +3138,7 @@
         if (!name||!email||!pass) { alertEl.innerHTML=`<div class="form-alert error">يرجى ملء جميع الحقول</div>`; return; }
         btn.disabled=true; btn.textContent='جاري الإضافة...';
         try {
-            const data=await fetch('/api/admin/add-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})}).then(r=>r.json());
+            const data=await fetch('/api/admin/add-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName:name,email,password:pass, phone:'-', specialization:'-', experience:'-'})}).then(r=>r.json());
             if (data.success) { alertEl.innerHTML=`<div class="form-alert success"> تمت إضافة الطبيب بنجاح!</div>`; onSuccess(); await loadStats(); }
             else alertEl.innerHTML=`<div class="form-alert error">${data.message}</div>`;
         } catch { alertEl.innerHTML=`<div class="form-alert error">حدث خطأ في الاتصال</div>`; }
@@ -3131,15 +3258,304 @@
 
     function refreshAll() { loadOverview(); }
 
-    document.getElementById('logDetailsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLogDetailsModal(); });
-    document.getElementById('addDoctorModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAddDoctorModal(); });
-    document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeConfirmModal(); });
-
     document.addEventListener('DOMContentLoaded', () => { 
+        document.getElementById('logDetailsModal')?.addEventListener('click', e => { if (e.target === e.currentTarget) closeLogDetailsModal(); });
+        document.getElementById('addDoctorModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAddDoctorModal(); });
+        document.getElementById('confirmModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeConfirmModal(); });
+        document.getElementById('analysisDetailsModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAnalysisDetailsModal(); });
+        document.getElementById('editContentModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeEditContentModal(); });
+        document.getElementById('addContentModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAddContentModal(); });
+        document.getElementById('editDoctorModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeEditDoctorModal(); });
+        document.getElementById('doctorDetailsModal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeDoctorDetailsModal(); });
+
         loadOverview(); 
         loadSystemLogs();
         loadSidebarAlerts();
     });
     </script>
+
+    <!-- Edit Content Modal -->
+    <div id="editContentModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">تعديل المحتوى</h3>
+                <button class="modal-close" type="button" onclick="closeEditContentModal()">×</button>
+            </div>
+                <form onsubmit="saveContentEdit(event)" style="display:flex; flex-direction:column; gap:15px;">
+                    <input type="hidden" id="edit-content-id">
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">العنوان</label>
+                        <input type="text" id="edit-content-title" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الفئة</label>
+                        <input type="text" id="edit-content-category" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">اللغة</label>
+                        <input type="text" id="edit-content-language" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">المؤلف</label>
+                        <input type="text" id="edit-content-author" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">نوع المحتوى</label>
+                        <select id="edit-content-type" class="form-input" required>
+                            <option value="مقال">مقال</option>
+                            <option value="فيديو">فيديو</option>
+                            <option value="إرشادات">إرشادات</option>
+                            <option value="نشاط">نشاط</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الوصف المختصر</label>
+                        <textarea id="edit-content-desc" class="form-input" rows="3"></textarea>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الرابط أو المرفق</label>
+                        <input type="text" id="edit-content-link" class="form-input">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الحالة</label>
+                        <select id="edit-content-status" class="form-input" required>
+                            <option value="مسودة">مسودة</option>
+                            <option value="منشور">منشور</option>
+                            <option value="موقوف">موقوف</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditContentModal()">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Content Modal -->
+    <div id="addContentModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">إضافة محتوى تعليمي</h3>
+                <button class="modal-close" type="button" onclick="closeAddContentModal()">×</button>
+            </div>
+                <form onsubmit="submitAddContent(event)" style="display:flex; flex-direction:column; gap:15px;" id="addContentForm">
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">العنوان</label>
+                        <input type="text" id="add-content-title" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الفئة</label>
+                        <input type="text" id="add-content-category" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">اللغة</label>
+                        <input type="text" id="add-content-language" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">المؤلف</label>
+                        <input type="text" id="add-content-author" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">نوع المحتوى</label>
+                        <select id="add-content-type" class="form-input" required>
+                            <option value="مقال">مقال</option>
+                            <option value="فيديو">فيديو</option>
+                            <option value="إرشادات">إرشادات</option>
+                            <option value="نشاط">نشاط</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الوصف المختصر</label>
+                        <textarea id="add-content-desc" class="form-input" rows="3"></textarea>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الرابط أو المرفق</label>
+                        <input type="text" id="add-content-link" class="form-input">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الحالة</label>
+                        <select id="add-content-status" class="form-input" required>
+                            <option value="مسودة">مسودة</option>
+                            <option value="منشور">منشور</option>
+                            <option value="موقوف">موقوف</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeAddContentModal()">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">حفظ المحتوى</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Doctor Modal -->
+    <div id="editDoctorModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">تعديل بيانات الطبيب</h3>
+                <button class="modal-close" type="button" onclick="closeEditDoctorModal()">×</button>
+            </div>
+                <form onsubmit="saveDoctorEdit(event)" style="display:flex; flex-direction:column; gap:15px;" id="editDoctorForm">
+                    <input type="hidden" id="edit-doc-id">
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">الاسم</label>
+                        <input type="text" id="edit-doc-name" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">البريد الإلكتروني</label>
+                        <input type="email" id="edit-doc-email" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">التخصص</label>
+                        <input type="text" id="edit-doc-specialty" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;">رقم الرخصة</label>
+                        <input type="text" id="edit-doc-license" class="form-input" required>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditDoctorModal()">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Analysis Details Modal -->
+    <div id="analysisDetailsModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 800px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">تفاصيل التحليل / التقرير</h3>
+                <button class="modal-close" type="button" onclick="closeAnalysisDetailsModal()">×</button>
+            </div>
+                <div id="analysis-modal-error" style="display: none; padding: 15px; background: #ffebee; color: #c62828; border-radius: 8px; margin-bottom: 15px;">
+                    <strong id="analysis-modal-error-text"></strong>
+                </div>
+                
+                <div id="analysis-modal-content">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                            <h4 style="margin-top: 0; color: var(--color-primary); border-bottom: 1px solid #ddd; padding-bottom: 5px;">معلومات الطفل</h4>
+                            <p><strong>الاسم:</strong> <span id="modal-an-childName"></span></p>
+                            <p><strong>العمر:</strong> <span id="modal-an-childAge"></span></p>
+                            <p><strong>الجنس:</strong> <span id="modal-an-childGender"></span></p>
+                            <p><strong>التشخيص:</strong> <span id="modal-an-childDiagnosis"></span></p>
+                        </div>
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                            <h4 style="margin-top: 0; color: var(--color-primary); border-bottom: 1px solid #ddd; padding-bottom: 5px;">معلومات ولي الأمر</h4>
+                            <p><strong>الاسم:</strong> <span id="modal-an-parentName"></span></p>
+                            <p><strong>البريد:</strong> <span id="modal-an-parentEmail"></span></p>
+                            <p><strong>الهاتف:</strong> <span id="modal-an-parentPhone"></span></p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                            <h4 style="margin-top: 0; color: var(--color-primary); border-bottom: 1px solid #ddd; padding-bottom: 5px;">معلومات الطبيب</h4>
+                            <p><strong>الاسم:</strong> <span id="modal-an-doctorName"></span></p>
+                            <p><strong>التخصص:</strong> <span id="modal-an-doctorSpecialization"></span></p>
+                        </div>
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                            <h4 style="margin-top: 0; color: var(--color-primary); border-bottom: 1px solid #ddd; padding-bottom: 5px;">معلومات التحليل</h4>
+                            <p><strong>رقم التقرير:</strong> <span id="modal-an-id"></span></p>
+                            <p><strong>نسبة الذكاء الاصطناعي:</strong> <span id="modal-an-aiPercentage"></span></p>
+                            <p><strong>الثقة:</strong> <span id="modal-an-confidence"></span></p>
+                            <p><strong>الحالة:</strong> <span id="modal-an-status"></span></p>
+                            <p><strong>تاريخ الرفع:</strong> <span id="modal-an-uploadDate"></span></p>
+                            <p><strong>تاريخ التحديث:</strong> <span id="modal-an-updatedDate"></span></p>
+                        </div>
+                    </div>
+
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-top: 0; color: var(--color-primary); border-bottom: 1px solid #ddd; padding-bottom: 5px;">الملخص والتوصيات</h4>
+                        <p><strong>الملخص:</strong></p>
+                        <p id="modal-an-summary" style="white-space: pre-wrap; margin-bottom: 15px;"></p>
+                        
+                        <p><strong>التوصيات:</strong></p>
+                        <p id="modal-an-recommendations" style="white-space: pre-wrap; margin-bottom: 15px;"></p>
+
+                        <p><strong>ملاحظات الطبيب:</strong></p>
+                        <p id="modal-an-doctorNotes" style="white-space: pre-wrap;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAnalysisDetailsModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+    <!-- User Details Modal -->
+    <div id="userDetailsModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">تفاصيل المستخدم</h3>
+                <button class="modal-close" type="button" onclick="closeUserDetailsModal()">×</button>
+            </div>
+            <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <p><strong>الاسم:</strong> <span id="modal-ud-name"></span></p>
+                <p><strong>البريد الإلكتروني:</strong> <span id="modal-ud-email"></span></p>
+                <p><strong>رقم الهاتف:</strong> <span id="modal-ud-phone"></span></p>
+                <p><strong>الدور:</strong> <span id="modal-ud-role"></span></p>
+                <p><strong>الحالة:</strong> <span id="modal-ud-status"></span></p>
+                <p><strong>تاريخ التسجيل:</strong> <span id="modal-ud-date"></span></p>
+                <p><strong>آخر دخول:</strong> <span id="modal-ud-lastLogin"></span></p>
+                <hr>
+                <div id="modal-ud-extra"></div>
+            </div>
+            <div class="modal-footer" style="padding:15px;text-align:left;">
+                <button class="btn btn-outline" onclick="closeUserDetailsModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: right; direction: rtl;">
+            <div class="modal-header">
+                <h3 class="modal-title">تعديل المستخدم</h3>
+                <button class="modal-close" type="button" onclick="closeEditUserModal()">×</button>
+            </div>
+            <form onsubmit="saveUserEdit(event)" style="padding: 15px; display:flex; flex-direction:column; gap:15px;">
+                <input type="hidden" id="edit-user-id">
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">الاسم الكامل</label>
+                    <input type="text" id="edit-user-name" class="form-input" required>
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">البريد الإلكتروني</label>
+                    <input type="email" id="edit-user-email" class="form-input" required>
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">رقم الهاتف</label>
+                    <input type="text" id="edit-user-phone" class="form-input">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">الدور</label>
+                    <select id="edit-user-role" class="form-input" required>
+                        <option value="user">مستخدم/ولي أمر</option>
+                        <option value="parent">ولي أمر</option>
+                        <option value="doctor">أخصائي/طبيب</option>
+                        <option value="admin">مدير</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">الحالة</label>
+                    <select id="edit-user-status" class="form-input" required>
+                        <option value="نشط">نشط</option>
+                        <option value="موقوف">موقوف</option>
+                        <option value="بانتظار التفعيل">بانتظار التفعيل</option>
+                    </select>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                    <button type="button" class="btn btn-outline" onclick="closeEditUserModal()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

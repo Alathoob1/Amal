@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     phone TEXT,
     role TEXT NOT NULL CHECK(role IN ('admin', 'doctor', 'parent')),
+    status TEXT DEFAULT 'نشط',
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -34,6 +35,18 @@ CREATE TABLE IF NOT EXISTS doctors (
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Links parents/children to doctors explicitly
+CREATE TABLE IF NOT EXISTS patient_assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doctorId INTEGER NOT NULL,
+    childId INTEGER NOT NULL,
+    parentId INTEGER NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (childId) REFERENCES children(id) ON DELETE CASCADE,
+    FOREIGN KEY (parentId) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     childId INTEGER NOT NULL,
@@ -41,8 +54,29 @@ CREATE TABLE IF NOT EXISTS appointments (
     doctorId INTEGER NOT NULL,
     date TEXT NOT NULL,
     time TEXT NOT NULL,
-    status TEXT DEFAULT 'Pending' CHECK(status IN ('Pending', 'Approved', 'Completed', 'Cancelled')),
+    status TEXT DEFAULT 'Pending' CHECK(status IN ('Pending', 'Approved', 'Completed', 'Cancelled', 'Rejected')),
     notes TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (childId) REFERENCES children(id) ON DELETE CASCADE,
+    FOREIGN KEY (parentId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- AI Analyses Requested by Parents
+CREATE TABLE IF NOT EXISTS analyses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    childId INTEGER NOT NULL,
+    parentId INTEGER NOT NULL,
+    doctorId INTEGER NOT NULL,
+    title TEXT,
+    uploadedFileName TEXT,
+    aiResult TEXT,
+    aiConfidence TEXT,
+    aiSummary TEXT,
+    doctorReview TEXT,
+    doctorRecommendations TEXT,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'sent')),
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (childId) REFERENCES children(id) ON DELETE CASCADE,
@@ -53,22 +87,40 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     childId INTEGER NOT NULL,
+    parentId INTEGER NOT NULL,
     doctorId INTEGER NOT NULL,
+    analysisId INTEGER,
     title TEXT NOT NULL,
     progress TEXT,
     recommendations TEXT,
+    doctorNotes TEXT,
+    status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'sent')),
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (childId) REFERENCES children(id) ON DELETE CASCADE,
-    FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (parentId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (analysisId) REFERENCES analyses(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    participant1Id INTEGER NOT NULL,
+    participant2Id INTEGER NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (participant1Id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (participant2Id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversationId INTEGER,
     senderId INTEGER NOT NULL,
     receiverId INTEGER NOT NULL,
     message TEXT NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversationId) REFERENCES conversations(id) ON DELETE CASCADE,
     FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiverId) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -93,4 +145,25 @@ CREATE TABLE IF NOT EXISTS notifications (
     isRead INTEGER DEFAULT 0,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actorId INTEGER,
+    actorRole TEXT,
+    targetUserId INTEGER,
+    entityType TEXT,
+    entityId INTEGER,
+    action TEXT NOT NULL,
+    description TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (actorId) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (targetUserId) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS educational_content (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT, category TEXT, language TEXT, author TEXT,
+    contentType TEXT, description TEXT, link TEXT, status TEXT DEFAULT 'مسودة',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );

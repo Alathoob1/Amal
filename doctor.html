@@ -429,12 +429,11 @@
                             </div>
 
                             <label class="form-label" style="margin-top: auto;">ملاحظات الطبيب (تظهر في التقرير):</label>
-                            <textarea class="form-control" rows="3" placeholder="أضف ملاحظاتك أو عدّل على استنتاج الذكاء الاصطناعي..."></textarea>
+                            <textarea id="analysis-review-notes" class="form-control" rows="3" placeholder="أضف ملاحظاتك أو عدّل على استنتاج الذكاء الاصطناعي..."></textarea>
                             
                             <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
-                                <button class="btn btn-primary" style="flex: 1;" onclick="alert('تم الاعتماد'); showSection('review-list-section')">اعتماد النتيجة</button>
-                                <button class="btn btn-outline" style="flex: 1; color: #B7791F; border-color: #B7791F;" onclick="alert('تم طلب تعديل'); showSection('review-list-section')">يطلب تعديل</button>
-                                <button class="btn btn-danger" onclick="alert('تم الرفض'); showSection('review-list-section')">رفض</button>
+                                <button class="btn btn-primary" style="flex: 1;" onclick="submitAnalysisReview('sent')">اعتماد وإرسال التقرير</button>
+                                <button class="btn btn-outline" style="flex: 1; color: #B7791F; border-color: #B7791F;" onclick="submitAnalysisReview('reviewed')">حفظ النتيجة كمسودة</button>
                             </div>
                         </div>
                     </div>
@@ -796,6 +795,10 @@
     </div>
 
     <script>
+        let currentAnalysisId = null;
+        let currentApptId = null;
+        let currentReportId = null;
+
         function showSection(sectionId, element) {
             const sections = document.querySelectorAll('.section-content');
             sections.forEach(sec => sec.style.display = 'none');
@@ -807,20 +810,13 @@
                 const links = document.querySelectorAll('.sidebar-nav a');
                 links.forEach(link => link.classList.remove('active'));
                 element.classList.add('active');
-            } else if(sectionId) {
-                const links = document.querySelectorAll('.sidebar-nav a');
-                links.forEach(link => {
-                    link.classList.remove('active');
-                    if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(sectionId)) {
-                        link.classList.add('active');
-                    }
-                });
             }
         }
 
-        function showPatientProfile(name) {
+        function showPatientProfile(name, id) {
             document.getElementById('profile-patient-name').innerText = name;
             showSection('patient-profile-section');
+            // Normally would fetch profile data by ID here
         }
 
         function showProfileTab(tabId, element) {
@@ -832,12 +828,15 @@
             element.classList.add('active');
         }
 
-        function showAnalysisDetail(name) {
+        function showAnalysisDetail(id, name, confidence, summary) {
+            currentAnalysisId = id;
             document.getElementById('analysis-patient-name').innerText = name;
+            document.getElementById('analysis-review-notes').value = '';
             showSection('analysis-detail-section');
         }
 
-        function showReportDetail(name, status) {
+        function showReportDetail(id, name, status) {
+            currentReportId = id;
             document.getElementById('report-child-name').innerText = name;
             const btnSend = document.getElementById('btn-rep-send');
             const btnEdit = document.getElementById('btn-rep-edit');
@@ -849,39 +848,43 @@
             btnComp.style.display = 'none';
             badge.style.display = 'none';
 
-            if(status === 'ready') {
+            if(status === 'draft') {
                 btnSend.style.display = 'inline-block';
                 btnEdit.style.display = 'inline-block';
             } else if(status === 'sent') {
                 badge.style.display = 'block';
-            } else if(status === 'edit') {
-                btnEdit.style.display = 'inline-block';
-            } else if(status === 'draft') {
-                btnComp.style.display = 'inline-block';
             }
             showSection('report-detail-section');
         }
 
-        function showAppointmentDetail(name) {
+        function showAppointmentDetail(id, name, status) {
+            currentApptId = id;
+            document.getElementById('btn-appt-start').style.display = 'none';
+            document.getElementById('btn-appt-approve').style.display = 'none';
+            document.getElementById('btn-appt-cancel').style.display = 'none';
+
+            if (status === 'Pending') {
+                document.getElementById('btn-appt-approve').style.display = 'inline-block';
+                document.getElementById('btn-appt-cancel').style.display = 'inline-block';
+            } else if (status === 'Approved') {
+                document.getElementById('btn-appt-start').style.display = 'inline-block';
+                document.getElementById('btn-appt-cancel').style.display = 'inline-block';
+            }
+
             showSection('appointment-detail-section');
         }
 
-        // Old switchChat removed to fix SyntaxError
         function renderDoctorDashboard() {
             if (!doctorData) return;
             
-            // 1. Populate stats
+            // Stats
             const statPatients = document.getElementById('stat-patients');
             if (statPatients) statPatients.textContent = doctorData.patients?.length || 0;
             
-            const pendingActivities = doctorData.activities?.filter(a => a.status === 'Pending') || [];
-            const statPending = document.getElementById('stat-pending');
-            if (statPending) statPending.textContent = pendingActivities.length;
+            const pendingAnalyses = doctorData.analyses?.filter(a => a.status === 'pending') || [];
+            const draftReports = doctorData.reports?.filter(r => r.status === 'draft') || [];
             
-            const statAppts = document.getElementById('stat-appointments');
-            if (statAppts) statAppts.textContent = doctorData.appointments?.length || 0;
-
-            // 2. Populate Patients table
+            // Patients table
             const patientsTbody = document.getElementById('doc-patients-tbody');
             if (patientsTbody && doctorData.patients) {
                 if (doctorData.patients.length === 0) {
@@ -896,31 +899,31 @@
                             <td>-</td>
                             <td>-</td>
                             <td><span style="color: #3B5E39; font-weight: 600; font-size: 0.85rem;">نشط</span></td>
-                            <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showPatientProfile('${p.fullName}')">فتح الملف</button></td>
+                            <td><button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem; border-radius: 6px;" onclick="showPatientProfile('${p.fullName}', ${p.id})">فتح الملف</button></td>
                         </tr>
                     `).join('');
                 }
             }
 
-            // 3. Populate AI Analyses Reviews table
+            // Analyses Reviews table
             const reviewsTbody = document.getElementById('doc-reviews-tbody');
-            if (reviewsTbody && doctorData.activities) {
-                if (pendingActivities.length === 0) {
+            if (reviewsTbody) {
+                if (pendingAnalyses.length === 0) {
                     reviewsTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد تحليلات بانتظار المراجعة</td></tr>';
                 } else {
-                    reviewsTbody.innerHTML = pendingActivities.map(d => `
+                    reviewsTbody.innerHTML = pendingAnalyses.map(a => `
                         <tr>
-                            <td style="font-weight: 600;">${d.childName || 'طفل'}</td>
-                            <td>${d.createdAt}</td>
-                            <td><span class="badge-dynamic" style="background: rgba(144,180,242,0.15); color: #1D4ED8;">85%</span></td>
+                            <td style="font-weight: 600;">${a.childName || 'طفل'}</td>
+                            <td>${a.createdAt}</td>
+                            <td><span class="badge-dynamic" style="background: rgba(144,180,242,0.15); color: #1D4ED8;">${a.aiConfidence || '85%'}</span></td>
                             <td><span class="badge-dynamic badge-edit" style="color: #B7791F; background: rgba(255,193,7,0.15);">بانتظار المراجعة</span></td>
-                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail('${d.childName}')">مراجعة</button></td>
+                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAnalysisDetail(${a.id}, '${a.childName}', '${a.aiConfidence}', '${a.aiSummary}')">مراجعة</button></td>
                         </tr>
                     `).join('');
                 }
             }
 
-            // 4. Populate Reports table
+            // Reports table
             const reportsTbody = document.getElementById('doc-reports-tbody');
             if (reportsTbody && doctorData.reports) {
                 if (doctorData.reports.length === 0) {
@@ -930,21 +933,36 @@
                         <tr>
                             <td>${r.createdAt || '-'}</td>
                             <td style="font-weight: 600;">${r.childName || 'طفل'}</td>
-                            <td>-</td>
-                            <td><span class="badge-dynamic badge-ready">${r.status === 'pending' ? 'بانتظار المراجعة' : r.status || 'معتمد'}</span></td>
+                            <td>تقرير</td>
+                            <td><span class="badge-dynamic ${r.status === 'sent' ? 'badge-sent' : 'badge-draft'}">${r.status === 'sent' ? 'أُرسل' : 'مسودة'}</span></td>
                             <td>
-                                <div class="action-btns">
-                                    <button class="btn-icon" title="عرض" onclick="showReportDetail('${r.childName}', '${r.status || 'approved'}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-                                </div>
+                                <button class="btn btn-outline" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showReportDetail(${r.id}, '${r.childName}', '${r.status}')">${r.status === 'sent' ? 'عرض التقرير' : 'استكمال التقرير'}</button>
                             </td>
                         </tr>
                     `).join('');
                 }
             }
 
-            // 6. Populate Messages List (Moved to loadConversations)
+            // Appointments table (adding it here for completeness)
+            const apptsTbody = document.querySelector('#appointments-list-section tbody');
+            if (apptsTbody && doctorData.appointments) {
+                if (doctorData.appointments.length === 0) {
+                    apptsTbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">لا توجد مواعيد</td></tr>';
+                } else {
+                    apptsTbody.innerHTML = doctorData.appointments.map(a => `
+                        <tr>
+                            <td style="font-weight: 600;">${a.childName || 'طفل'}</td>
+                            <td>${a.date}</td>
+                            <td>${a.time}</td>
+                            <td>متابعة</td>
+                            <td><span class="badge-dynamic" style="${a.status === 'Pending' ? 'background: #fff3cd; color: #856404;' : (a.status === 'Approved' ? 'background: #d4edda; color: #155724;' : 'background: #e2e3e5; color: #383d41;')}">${a.status}</span></td>
+                            <td><button class="btn btn-primary" style="padding: 6px 16px; font-size: 0.85rem;" onclick="showAppointmentDetail(${a.id}, '${a.childName}', '${a.status}')">إدارة الجلسة</button></td>
+                        </tr>
+                    `).join('');
+                }
+            }
 
-            // 7. Populate Profile
+            // Profile
             if (doctorData.profile) {
                 const nameEl = document.getElementById('doc-profile-name');
                 const emailEl = document.getElementById('doc-profile-email');
@@ -955,12 +973,42 @@
             }
         }
         
+        async function submitAnalysisReview(status) {
+            const notes = document.getElementById('analysis-review-notes').value;
+            try {
+                const res = await fetch(`/api/analyses/${currentAnalysisId}/review`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ doctorReview: notes, doctorRecommendations: notes, status: status })
+                });
+                if(res.ok) {
+                    alert('تم حفظ المراجعة بنجاح');
+                    await refreshDoctorData();
+                    showSection('review-list-section');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateAppointmentStatus(status) {
+            try {
+                const res = await fetch(`/api/appointments/${currentApptId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: status })
+                });
+                if(res.ok) {
+                    alert('تم تحديث حالة الموعد');
+                    await refreshDoctorData();
+                    showSection('appointments-list-section');
+                }
+            } catch(e) { console.error(e); }
+        }
+
         async function loadConversations() {
             try {
                 const res = await fetch(`/api/users/${doctorId}/conversations`);
                 const data = await res.json();
-                conversations = data.conversations || [];
-                console.log("Conversations fetched:", conversations);
+                conversations = data || [];
                 
                 const chatList = document.getElementById('doc-chat-list');
                 if (!chatList) return;
@@ -969,34 +1017,30 @@
                     chatList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-text-muted);">لا توجد محادثات حتى الآن</div>';
                 } else {
                     chatList.innerHTML = conversations.map(c => `
-                        <div class="chat-item ${activeConversationId === c.id ? 'active' : ''}" onclick="switchChat(this, ${c.id}, '${c.parent_name}', '${c.child_name || '...'}', ${c.parent_id})">
+                        <div class="chat-item ${activeConversationId === c.id ? 'active' : ''}" onclick="switchChat(this, ${c.id}, '${c.otherParticipantName}', ${c.otherParticipantId})">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                                <h4 style="margin: 0; font-size: 0.95rem; color: var(--color-text-main);">${c.parent_name}</h4>
-                                <span style="font-size: 0.75rem; color: var(--color-text-muted);">${c.updated_at ? new Date(c.updated_at).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                                <h4 style="margin: 0; font-size: 0.95rem; color: var(--color-text-main);">${c.otherParticipantName}</h4>
+                                <span style="font-size: 0.75rem; color: var(--color-text-muted);">${c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : ''}</span>
                             </div>
-                            <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.last_message || ''}</p>
                         </div>
                     `).join('');
                 }
             } catch(e) {
                 console.error("Failed to load conversations:", e);
-                const chatList = document.getElementById('doc-chat-list');
-                if (chatList) chatList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--color-text-muted);">Error fetching conversations: ' + e.message + '</div>';
             }
         }
 
-        async function switchChat(element, convId, parentName, childName, parentId) {
+        async function switchChat(element, convId, otherParticipantName, otherParticipantId) {
             const items = document.querySelectorAll('.chat-item');
             items.forEach(i => i.classList.remove('active'));
             if(element) element.classList.add('active');
 
             activeConversationId = convId;
-            activeParentId = parentId;
+            activeParentId = otherParticipantId;
 
             document.getElementById('chat-header-empty').style.display = 'none';
             document.getElementById('chat-active-area').style.display = 'flex';
-            document.getElementById('active-chat-parent-name').innerText = parentName;
-            document.getElementById('active-chat-child-name').innerText = childName;
+            document.getElementById('active-chat-parent-name').innerText = otherParticipantName;
             
             const msgArea = document.getElementById('chat-messages-container');
             msgArea.innerHTML = '<div style="text-align: center; color: var(--color-text-muted);">جاري تحميل الرسائل...</div>';
@@ -1005,20 +1049,16 @@
             
             try {
                 const res = await fetch(`/api/conversations/${convId}/messages`);
-                const data = await res.json();
-                const msgs = data.messages || [];
-                console.log("Messages fetched:", msgs);
+                const msgs = await res.json();
                 
                 msgArea.innerHTML = msgs.map(m => `
-                    <div class="chat-bubble ${m.sender_role === 'doctor' ? 'sent' : 'received'}">
-                        <p style="margin: 0;">${m.text}</p>
-                        <div style="font-size: 0.75rem; color: ${m.sender_role === 'doctor' ? 'rgba(255,255,255,0.8)' : 'var(--color-text-muted)'}; text-align: left; margin-top: 4px;">${m.time || ''}</div>
+                    <div class="chat-bubble ${m.senderId == doctorId ? 'sent' : 'received'}">
+                        <p style="margin: 0;">${m.message}</p>
                     </div>
                 `).join('');
                 msgArea.scrollTop = msgArea.scrollHeight;
             } catch(e) {
                 console.error(e);
-                msgArea.innerHTML = '<div style="text-align: center; color: red;">فشل في تحميل الرسائل</div>';
             }
         }
 
@@ -1032,20 +1072,18 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        sender_id: doctorId,
-                        receiver_id: activeParentId,
-                        sender_role: 'doctor',
-                        text: text
+                        senderId: doctorId,
+                        receiverId: activeParentId,
+                        message: text
                     })
                 });
                 const data = await res.json();
-                console.log("Insert message result:", data);
                 if (data.success) {
                     input.value = '';
                     await loadConversations();
                     if (data.conversationId) {
                         const c = conversations.find(x => x.id === data.conversationId);
-                        if(c) switchChat(null, c.id, c.parent_name, c.child_name || '...', c.parent_id);
+                        if(c) switchChat(null, c.id, c.otherParticipantName, c.otherParticipantId);
                     }
                 }
             } catch(e) {
@@ -1053,7 +1091,6 @@
             }
         }
 
-        // Wrap initDoctorApp to auto-refresh UI on actions
         async function refreshDoctorData() {
             try {
                 const res = await fetch(`/api/doctors/${doctorId}/data`);

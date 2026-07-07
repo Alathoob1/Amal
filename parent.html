@@ -271,6 +271,12 @@
                                 <label class="form-label" style="font-weight: 600;">Drawing Title / عنوان الرسمة</label>
                                 <input type="text" id="drawing-title-field" class="form-control" placeholder="e.g. Tree in the Garden / شجرة الحديقة" required>
                             </div>
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 600;" data-i18n="select_doctor">Select Doctor / اختر الطبيب</label>
+                                <select id="drawing-doctor-select" class="form-control doctor-select-dropdown" required>
+                                    <option value="" disabled selected>Select a doctor...</option>
+                                </select>
+                            </div>
                             
                             <div class="form-group">
                                 <label class="form-label" style="font-weight: 600;">Select Drawing File / اختر ملف الرسمة</label>
@@ -391,6 +397,12 @@
                         
                         <form onsubmit="handleBookAppointment(event)">
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label class="form-label" data-i18n="select_doctor">Select Doctor / اختر الطبيب</label>
+                                    <select id="apt-doctor-select" class="form-control doctor-select-dropdown" required>
+                                        <option value="" disabled selected>Select a doctor...</option>
+                                    </select>
+                                </div>
                                 <div class="form-group">
                                     <label class="form-label" data-i18n="apt_date">Date</label>
                                     <input type="date" id="apt-date-input" class="form-control" required>
@@ -427,7 +439,9 @@
                         <div style="padding: 16px 24px; background: rgba(255,255,255,0.9); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;">
                             <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">Dr</div>
                             <div>
-                                <h3 style="font-size: 1rem; color: var(--color-text-main); margin: 0;">Dr. Ahmed (Clinical Psychologist)</h3>
+                                <select id="chat-doctor-select" class="form-control doctor-select-dropdown" style="margin-bottom: 4px; font-weight: bold; border: none; background: transparent;" onchange="loadChatWithDoctor(this.value)">
+                                    <option value="" disabled selected>Select a doctor...</option>
+                                </select>
                                 <p style="font-size: 0.75rem; color: var(--color-primary); margin: 0;"> Online / متصل</p>
                             </div>
                         </div>
