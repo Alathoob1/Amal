@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +20,7 @@
         }
     </script>
     <script>
-        (function() {
+        (function () {
             const role = localStorage.getItem('auraUserRole');
             if (!role) {
                 window.location.href = 'login.html';
@@ -33,18 +34,29 @@
         })();
     </script>
 </head>
+
 <body>
 
     <!-- Header Navbar -->
     <nav class="navbar">
         <a href="parent.html" class="navbar-brand">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
-            أمل <span style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;" data-i18n="role_parent_header">| Parent Portal</span>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path
+                    d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z"
+                    stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="12" cy="9" r="2.5" fill="var(--color-gold)" />
+            </svg>
+            أمل <span
+                style="font-size: 0.9rem; color: var(--color-text-muted); margin-inline-start: 8px; font-weight: 500;"
+                data-i18n="role_parent_header">| Parent Portal</span>
         </a>
         <div class="navbar-links">
             <div style="display: flex; align-items: center; gap: 12px; margin-inline-end: 16px;">
-                <div id="parent-navbar-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">P</div>
-                <span id="parent-navbar-name" style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">Sarah A.</span>
+                <div id="parent-navbar-avatar"
+                    style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                    --</div>
+                <span id="parent-navbar-name"
+                    style="font-weight: 500; font-size: 0.95rem; color: var(--color-text-main);">--</span>
             </div>
             <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px;">EN / AR</button>
             <a href="#" onclick="logoutParent()" class="btn btn-danger" data-i18n="btn_logout">Logout</a>
@@ -53,66 +65,85 @@
 
     <div class="container content-wrapper">
         <div class="dashboard-grid">
-            
+
             <!-- Sidebar Navigation containing all 12 sections -->
             <aside class="sidebar" style="position: sticky; top: 85px;">
                 <ul class="sidebar-nav">
-                    <li><a href="#" class="active" onclick="showView('view-dashboard')" data-i18n="nav_dashboard">Dashboard</a></li>
+                    <li><a href="#" class="active" onclick="showView('view-dashboard')"
+                            data-i18n="nav_dashboard">Dashboard</a></li>
                     <li><a href="#" onclick="showView('view-profile')" data-i18n="nav_profile">Child Profile</a></li>
                     <li><a href="#" onclick="showView('view-upload')" data-i18n="nav_upload">Upload Drawing</a></li>
                     <li><a href="#" onclick="showView('view-reports')" data-i18n="nav_reports">AI Reports</a></li>
-                    <li><a href="#" onclick="showView('view-progress')" data-i18n="nav_progress">Progress Tracking</a></li>
-                    <li><a href="#" onclick="showView('view-appointments')" data-i18n="nav_appointments">Appointments</a></li>
+                    <li><a href="#" onclick="showView('view-progress')" data-i18n="nav_progress">Progress Tracking</a>
+                    </li>
+                    <li><a href="#" onclick="showView('view-appointments')"
+                            data-i18n="nav_appointments">Appointments</a></li>
                     <li><a href="#" onclick="showView('view-chat')" data-i18n="nav_chat">Chat with Doctor</a></li>
-                    <li><a href="#" onclick="showView('view-community')" data-i18n="nav_community">Parent Community</a></li>
-                    <li><a href="#" onclick="showView('view-resources')" data-i18n="nav_resources">Educational Resources</a></li>
+                    <li><a href="#" onclick="showView('view-community')" data-i18n="nav_community">Parent Community</a>
+                    </li>
+                    <li><a href="#" onclick="showView('view-resources')" data-i18n="nav_resources">Educational
+                            Resources</a></li>
                     <li>
-                        <a href="#" onclick="showView('view-notifications')" style="display: flex; align-items: center; justify-content: space-between;">
+                        <a href="#" onclick="showView('view-notifications')"
+                            style="display: flex; align-items: center; justify-content: space-between;">
                             <span data-i18n="nav_notifications">Notifications</span>
                             <span id="sidebar-notif-badge" class="nav-badge" style="display: none;"></span>
                         </a>
                     </li>
                     <li><a href="#" onclick="showView('view-settings')" data-i18n="nav_settings">Settings</a></li>
-                    <li><a href="#" onclick="showView('view-emergency')" data-i18n="nav_emergency" style="color: #E27D60; font-weight: 700;">Emergency Support</a></li>
+                    <li><a href="#" onclick="showView('view-emergency')" data-i18n="nav_emergency"
+                            style="color: #E27D60; font-weight: 700;">Emergency Support</a></li>
                 </ul>
             </aside>
 
             <!-- Main Content Area containing the 12 SPA sections -->
             <main>
                 <div class="alert-clinical">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--color-accent);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        style="flex-shrink: 0; color: var(--color-accent);">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
-                    <span data-i18n="disclaimer">This AI analysis provides supportive behavioral indicators, not a clinical diagnosis. All reports are pending human medical review.</span>
+                    <span data-i18n="disclaimer">This AI analysis provides supportive behavioral indicators, not a
+                        clinical diagnosis. All reports are pending human medical review.</span>
                 </div>
 
                 <!-- ==========================================
                      SECTION 1: Parent Dashboard
                      ========================================== -->
                 <div class="view-section active" id="view-dashboard">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
-                        
+                    <div
+                        style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+
                         <!-- Child Summary Card -->
                         <div class="card" style="margin-bottom: 0;">
-                            <h2 class="card-title" data-i18n="db_summary" style="margin-bottom: 16px;">Child Summary</h2>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); font-size: 0.95rem;">
+                            <h2 class="card-title" data-i18n="db_summary" style="margin-bottom: 16px;">Child Summary
+                            </h2>
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); font-size: 0.95rem;">
                                 <div>
-                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);" data-i18n="db_name">Name</span>:</p>
-                                    <strong id="db-child-name" style="font-size: 1.1rem; color: var(--color-text-main);">Leo M.</strong>
+                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);"
+                                            data-i18n="db_name">Name</span>:</p>
+                                    <strong id="db-child-name"
+                                        style="font-size: 1.1rem; color: var(--color-text-main);">--</strong>
                                 </div>
                                 <div>
-                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);" data-i18n="db_age">Age</span>:</p>
-                                    <strong id="db-child-age" style="font-size: 1.1rem; color: var(--color-text-main);">6 Years</strong>
+                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);"
+                                            data-i18n="db_age">Age</span>:</p>
+                                    <strong id="db-child-age"
+                                        style="font-size: 1.1rem; color: var(--color-text-main);">--</strong>
                                 </div>
                                 <div>
-                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);" data-i18n="db_diagnosis">Autism Level</span>:</p>
-                                    <strong id="db-child-level" style="color: var(--color-accent);">Level 2</strong>
+                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);"
+                                            data-i18n="db_diagnosis">Autism Level</span>:</p>
+                                    <strong id="db-child-level" style="color: var(--color-accent);">--</strong>
                                 </div>
                                 <div>
-                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);" data-i18n="db_doctor">Assigned Doctor</span>:</p>
-                                    <strong id="db-child-doc" style="color: var(--color-primary-hover);">Dr. Ahmed</strong>
+                                    <p style="margin-bottom: 4px;"><span style="color: var(--color-text-muted);"
+                                            data-i18n="db_doctor">Assigned Doctor</span>:</p>
+                                    <strong id="db-child-doc" style="color: var(--color-primary-hover);">--</strong>
                                 </div>
                             </div>
                         </div>
@@ -122,19 +153,40 @@
                             <h2 class="card-title" data-i18n="db_quick" style="margin-bottom: 16px;">Quick Access</h2>
                             <div class="quick-grid">
                                 <a href="#" class="quick-btn" onclick="showView('view-upload')">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
                                     <span data-i18n="nav_upload">Upload</span>
                                 </a>
                                 <a href="#" class="quick-btn" onclick="showView('view-reports')">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <path d="M14 2v6h6" />
+                                        <path d="M16 13H8" />
+                                        <path d="M16 17H8" />
+                                        <path d="M10 9H8" />
+                                    </svg>
                                     <span data-i18n="nav_reports">Reports</span>
                                 </a>
                                 <a href="#" class="quick-btn" onclick="showView('view-appointments')">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                    </svg>
                                     <span data-i18n="nav_appointments">Schedule</span>
                                 </a>
                                 <a href="#" class="quick-btn" onclick="showView('view-chat')">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                    </svg>
                                     <span data-i18n="nav_chat">Chat</span>
                                 </a>
                             </div>
@@ -167,19 +219,23 @@
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
-                        
+
                         <!-- Reports Widget -->
                         <div class="card">
-                            <h3 class="card-title" data-i18n="db_reports" style="margin-bottom: 12px;">Latest Reports</h3>
+                            <h3 class="card-title" data-i18n="db_reports" style="margin-bottom: 12px;">Latest Reports
+                            </h3>
                             <div id="db-latest-reports"></div>
                         </div>
 
                         <!-- Appointments widget & Activity -->
                         <div class="card">
-                            <h3 class="card-title" data-i18n="db_appointments" style="margin-bottom: 12px;">Upcoming Appointments</h3>
+                            <h3 class="card-title" data-i18n="db_appointments" style="margin-bottom: 12px;">Upcoming
+                                Appointments</h3>
                             <div id="db-upcoming-apt" style="margin-bottom: 24px;"></div>
-                            
-                            <h3 class="card-title" data-i18n="db_activity" style="margin-bottom: 12px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 16px;">Recent Activity</h3>
+
+                            <h3 class="card-title" data-i18n="db_activity"
+                                style="margin-bottom: 12px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 16px;">
+                                Recent Activity</h3>
                             <ul class="activity-list" id="db-activity-feed"></ul>
                         </div>
                     </div>
@@ -191,7 +247,7 @@
                 <div class="view-section" id="view-profile">
                     <div class="card">
                         <h2 class="card-title" data-i18n="prof_title">Child Medical & Behavioral Profile</h2>
-                        
+
                         <form onsubmit="handleProfileUpdate(event)">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
                                 <div class="form-group">
@@ -207,7 +263,8 @@
                                     <input type="text" id="prof-gender-input" class="form-control">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label" data-i18n="db_diagnosis">Autism Diagnosis and Level</label>
+                                    <label class="form-label" data-i18n="db_diagnosis">Autism Diagnosis and
+                                        Level</label>
                                     <input type="text" id="prof-level-input" class="form-control">
                                 </div>
                             </div>
@@ -253,7 +310,8 @@
                                 <input type="text" id="prof-emergency-input" class="form-control">
                             </div>
 
-                            <button type="submit" class="btn btn-primary" data-i18n="prof_save">Save Profile Settings</button>
+                            <button type="submit" class="btn btn-primary" data-i18n="prof_save">Save Profile
+                                Settings</button>
                         </form>
                     </div>
                 </div>
@@ -264,37 +322,45 @@
                 <div class="view-section" id="view-upload">
                     <div class="card" style="margin-bottom: 24px;">
                         <h2 class="card-title" data-i18n="upload_title">Upload a New Drawing</h2>
-                        <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="upload_desc">Drag and drop your child's drawing here, or click to browse. Max size 5MB.</p>
-                        
+                        <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="upload_desc">Drag and
+                            drop your child's drawing here, or click to browse. Max size 5MB.</p>
+
                         <form onsubmit="handleDrawingUpload(event)">
                             <div class="form-group">
                                 <label class="form-label" style="font-weight: 600;">Drawing Title / عنوان الرسمة</label>
-                                <input type="text" id="drawing-title-field" class="form-control" placeholder="e.g. Tree in the Garden / شجرة الحديقة" required>
+                                <input type="text" id="drawing-title-field" class="form-control"
+                                    placeholder="e.g. Tree in the Garden / شجرة الحديقة" required>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 600;" data-i18n="select_doctor">Select Doctor / اختر الطبيب</label>
-                                <select id="drawing-doctor-select" class="form-control doctor-select-dropdown" required>
+                            <div class="form-group" style="display: none;">
+                                <label class="form-label" style="font-weight: 600;" data-i18n="select_doctor">Select
+                                    Doctor / اختر الطبيب</label>
+                                <select id="drawing-doctor-select" class="form-control doctor-select-dropdown">
                                     <option value="" disabled selected>Select a doctor...</option>
                                 </select>
                             </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 600;">Select Drawing File / اختر ملف الرسمة</label>
-                                <input type="file" id="drawing-file-field" class="form-control" accept="image/*" required>
-                            </div>
 
-                            <div class="upload-area" onclick="document.getElementById('drawing-file-field').click()" style="padding: 40px; margin-bottom: 16px;">
+                            <div class="upload-area" onclick="document.getElementById('drawing-file-field').click()"
+                                style="padding: 40px; margin-bottom: 16px;">
+                                <input type="file" id="drawing-file-field" accept="image/*" style="display:none;"
+                                    onchange="previewSelectedDrawing(event)">
                                 <div class="upload-icon" style="margin-bottom: 8px;">
-                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
                                 </div>
                                 <span style="font-size: 0.9rem;" data-i18n="btn_upload">Select File</span>
                             </div>
 
-                            <button type="submit" class="btn btn-primary" style="width: 100%;">Upload and Start AI Analysis / رفع وبدء التحليل</button>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">Upload and Start AI
+                                Analysis / رفع وبدء التحليل</button>
                         </form>
                     </div>
 
-                    <h2 class="card-title" data-i18n="upload_history" style="margin-bottom: 16px;">Drawing Submission Log</h2>
+                    <h2 class="card-title" data-i18n="upload_history" style="margin-bottom: 16px;">Drawing Submission
+                        Log</h2>
                     <div id="upload-submissions"></div>
                 </div>
 
@@ -311,7 +377,8 @@
                 <div class="view-section" id="view-progress">
                     <div class="card">
                         <h2 class="card-title" data-i18n="nav_progress">Progress Tracking</h2>
-                        <p style="color: var(--color-text-muted); margin-bottom: 24px;">View behavioral development curves and therapy progress logs.</p>
+                        <p style="color: var(--color-text-muted); margin-bottom: 24px;">View behavioral development
+                            curves and therapy progress logs.</p>
 
                         <div class="progress-grid" style="margin-bottom: 32px;">
                             <div class="progress-card">
@@ -332,7 +399,8 @@
                             </div>
                             <div class="progress-card">
                                 <h4 data-i18n="prog_emo">Emotional Stability</h4>
-                                <h3 style="font-size: 1.8rem; color: var(--color-secondary); margin-block: 8px;">60%</h3>
+                                <h3 style="font-size: 1.8rem; color: var(--color-secondary); margin-block: 8px;">60%
+                                </h3>
                                 <div class="progress-bar-container">
                                     <div class="progress-bar-fill" data-val="60%"></div>
                                 </div>
@@ -350,40 +418,40 @@
 
                         <h3 class="card-title">Monthly Progress Log / سجل التقدم الشهري</h3>
                         <div class="table-responsive">
-                          <table class="table">
-                            <thead>
-                              <tr>
-                                <th>Month / الشهر</th>
-                                <th>Communication / التواصل</th>
-                                <th>Behavior / السلوك</th>
-                                <th>Emotional / التطور العاطفي</th>
-                                <th>Remarks / ملاحظات الطبيب</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td>June 2026</td>
-                                <td>85%</td>
-                                <td>70%</td>
-                                <td>60%</td>
-                                <td>Significant speech gestures improvement, high focus.</td>
-                              </tr>
-                              <tr>
-                                <td>May 2026</td>
-                                <td>80%</td>
-                                <td>65%</td>
-                                <td>55%</td>
-                                <td>Adapting well to visual schedules.</td>
-                              </tr>
-                              <tr>
-                                <td>April 2026</td>
-                                <td>75%</td>
-                                <td>60%</td>
-                                <td>50%</td>
-                                <td>Intake baseline evaluations completed.</td>
-                              </tr>
-                            </tbody>
-                          </table>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Month / الشهر</th>
+                                        <th>Communication / التواصل</th>
+                                        <th>Behavior / السلوك</th>
+                                        <th>Emotional / التطور العاطفي</th>
+                                        <th>Remarks / ملاحظات الطبيب</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>June 2026</td>
+                                        <td>85%</td>
+                                        <td>70%</td>
+                                        <td>60%</td>
+                                        <td>Significant speech gestures improvement, high focus.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>May 2026</td>
+                                        <td>80%</td>
+                                        <td>65%</td>
+                                        <td>55%</td>
+                                        <td>Adapting well to visual schedules.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>April 2026</td>
+                                        <td>75%</td>
+                                        <td>60%</td>
+                                        <td>50%</td>
+                                        <td>Intake baseline evaluations completed.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -394,12 +462,14 @@
                 <div class="view-section" id="view-appointments">
                     <div class="card" style="margin-bottom: 24px;">
                         <h2 class="card-title" data-i18n="apt_book">Book New Appointment</h2>
-                        
+
                         <form onsubmit="handleBookAppointment(event)">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label class="form-label" data-i18n="select_doctor">Select Doctor / اختر الطبيب</label>
-                                    <select id="apt-doctor-select" class="form-control doctor-select-dropdown" required>
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+                                <div class="form-group" style="grid-column: 1 / -1; display: none;">
+                                    <label class="form-label" data-i18n="select_doctor">Select Doctor / اختر
+                                        الطبيب</label>
+                                    <select id="apt-doctor-select" class="form-control doctor-select-dropdown">
                                         <option value="" disabled selected>Select a doctor...</option>
                                     </select>
                                 </div>
@@ -436,13 +506,21 @@
                 <div class="view-section" id="view-chat">
                     <div class="chat-container">
                         <!-- Chat Header -->
-                        <div style="padding: 16px 24px; background: rgba(255,255,255,0.9); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">Dr</div>
+                        <div
+                            style="padding: 16px 24px; background: rgba(255,255,255,0.9); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;">
+                            <div
+                                style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                                Dr</div>
                             <div>
-                                <select id="chat-doctor-select" class="form-control doctor-select-dropdown" style="margin-bottom: 4px; font-weight: bold; border: none; background: transparent;" onchange="loadChatWithDoctor(this.value)">
+                                <select id="chat-doctor-select" class="form-control doctor-select-dropdown"
+                                    style="display: none;" onchange="loadChatWithDoctor(this.value)">
                                     <option value="" disabled selected>Select a doctor...</option>
                                 </select>
-                                <p style="font-size: 0.75rem; color: var(--color-primary); margin: 0;"> Online / متصل</p>
+                                <h3 id="chat-doctor-display-name"
+                                    style="margin: 0; font-size: 1rem; color: var(--color-text-main); font-weight: bold;">
+                                    ...</h3>
+                                <p style="font-size: 0.75rem; color: var(--color-primary); margin: 0;"> Online / متصل
+                                </p>
                             </div>
                         </div>
 
@@ -450,15 +528,20 @@
                         <div class="chat-messages" id="chat-history-container"></div>
 
                         <!-- Attachments Mock bar helper -->
-                        <div style="background: rgba(0,0,0,0.02); padding: 6px var(--space-lg); border-top: 1px solid rgba(0,0,0,0.03); display: flex; gap: 12px; font-size: 0.85rem;">
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('leo_family_portrait.png')"> Send Image</button>
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="triggerAttachmentMock('medical_report_june.pdf')"> Send PDF</button>
-                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="sendVoiceNoteMock()"> Send Voice Note</button>
+                        <div
+                            style="background: rgba(0,0,0,0.02); padding: 6px var(--space-lg); border-top: 1px solid rgba(0,0,0,0.03); display: flex; gap: 12px; font-size: 0.85rem;">
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;"
+                                onclick="triggerAttachmentMock('leo_family_portrait.png')"> Send Image</button>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;"
+                                onclick="triggerAttachmentMock('medical_report_june.pdf')"> Send PDF</button>
+                            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;"
+                                onclick="sendVoiceNoteMock()"> Send Voice Note</button>
                         </div>
 
                         <!-- Input container bar -->
                         <form class="chat-input-area" onsubmit="sendChatMessage(event)">
-                            <input type="text" id="chat-text-input" class="form-control" data-i18n="chat_placeholder" placeholder="Type a message or attach a file..." style="flex: 1;" required>
+                            <input type="text" id="chat-text-input" class="form-control" data-i18n="chat_placeholder"
+                                placeholder="Type a message or attach a file..." style="flex: 1;" required>
                             <button type="submit" class="btn btn-primary" data-i18n="chat_send">Send</button>
                         </form>
                     </div>
@@ -468,19 +551,23 @@
                      SECTION 8: Parent Community
                      ========================================== -->
                 <div class="view-section" id="view-community">
-                    
+
                     <!-- View 8A: WhatsApp-style Groups List -->
                     <div id="community-groups-list">
                         <div class="card" style="margin-bottom: 24px; padding: 24px;">
                             <div class="flex justify-between items-center" style="margin-bottom: 12px;">
-                                <h2 class="card-title" data-i18n="comm_title" style="margin: 0; font-size:1.4rem;">Parent Communities & Support Groups</h2>
-                                <span style="background: rgba(117, 154, 114, 0.2); color: #3B5E39; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
-                                     11 active groups
+                                <h2 class="card-title" data-i18n="comm_title" style="margin: 0; font-size:1.4rem;">
+                                    Parent Communities & Support Groups</h2>
+                                <span
+                                    style="background: rgba(117, 154, 114, 0.2); color: #3B5E39; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                                    11 active groups
                                 </span>
                             </div>
-                            <p style="color: var(--color-text-muted);" class="mt-2">Select a topic-based community channel to connect with families, read announcements, ask questions, or request advice from specialists.</p>
+                            <p style="color: var(--color-text-muted);" class="mt-2">Select a topic-based community
+                                channel to connect with families, read announcements, ask questions, or request advice
+                                from specialists.</p>
                         </div>
-                        
+
                         <!-- Groups Grid -->
                         <div id="community-groups-grid" style="display: grid; grid-template-columns: 1fr; gap: 16px;">
                             <!-- Populated dynamically by JS -->
@@ -489,39 +576,53 @@
 
                     <!-- View 8B: Dedicated Group Discussion Feed -->
                     <div id="community-group-detail" style="display: none;">
-                        <button class="btn btn-outline" onclick="exitCommunityGroup()" style="margin-bottom: 16px; display: inline-flex; align-items: center; gap: 8px;">
+                        <button class="btn btn-outline" onclick="exitCommunityGroup()"
+                            style="margin-bottom: 16px; display: inline-flex; align-items: center; gap: 8px;">
                             ← <span style="font-weight: 600;">Back to Communities / العودة للمجموعات</span>
                         </button>
-                        
+
                         <!-- Group Header details -->
                         <div class="card" id="group-header-card" style="margin-bottom: 20px; padding: 24px;">
                             <!-- Dynamically loaded group info (announcement, moderator list, member count) -->
                         </div>
 
                         <!-- Search within Group & Create Post button -->
-                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; align-items: center;">
+                        <div
+                            style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; align-items: center;">
                             <div style="position: relative;">
-                                <input type="text" id="group-post-search" class="form-control" placeholder="Search posts in this group... / ابحث في المنشورات..." oninput="filterGroupPosts()" style="padding: 10px 16px;">
+                                <input type="text" id="group-post-search" class="form-control"
+                                    placeholder="Search posts in this group... / ابحث في المنشورات..."
+                                    oninput="filterGroupPosts()" style="padding: 10px 16px;">
                             </div>
-                            <button class="btn btn-primary" onclick="toggleCreatePostCollapse()" style="width: 100%; height:44px;">+ Write Post / إضافة منشور</button>
+                            <button class="btn btn-primary" onclick="toggleCreatePostCollapse()"
+                                style="width: 100%; height:44px;">+ Write Post / إضافة منشور</button>
                         </div>
 
                         <!-- Create Post Form Card (initially collapsed/hidden, togglable) -->
-                        <div class="card" id="create-post-card" style="display: none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--color-primary);">
-                            <h3 class="card-title" data-i18n="comm_post" style="margin-bottom: 12px;">Create Community Post</h3>
+                        <div class="card" id="create-post-card"
+                            style="display: none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--color-primary);">
+                            <h3 class="card-title" data-i18n="comm_post" style="margin-bottom: 12px;">Create Community
+                                Post</h3>
                             <form onsubmit="handleCreatePostInGroup(event)">
                                 <div class="form-group">
-                                    <textarea id="post-text-input" class="form-control" rows="3" data-i18n="comm_placeholder" placeholder="Share your experience or ask a question..." required></textarea>
+                                    <textarea id="post-text-input" class="form-control" rows="3"
+                                        data-i18n="comm_placeholder"
+                                        placeholder="Share your experience or ask a question..." required></textarea>
                                 </div>
-                                
+
                                 <div style="display: flex; gap: 16px; margin-bottom: 16px; align-items: center;">
-                                    <button type="button" class="btn btn-outline" style="font-size: 0.85rem; padding: 6px 12px;" onclick="triggerPostFileMock()"> Attach Image / File</button>
-                                    <span id="post-file-attached-label" style="font-size: 0.85rem; color: var(--color-primary-hover); font-weight: 600;"></span>
+                                    <button type="button" class="btn btn-outline"
+                                        style="font-size: 0.85rem; padding: 6px 12px;" onclick="triggerPostFileMock()">
+                                        Attach Image / File</button>
+                                    <span id="post-file-attached-label"
+                                        style="font-size: 0.85rem; color: var(--color-primary-hover); font-weight: 600;"></span>
                                 </div>
 
                                 <div class="flex justify-between items-center">
-                                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--color-text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="post-anon-checkbox"> <span data-i18n="comm_anon">Post Anonymously</span>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--color-text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="post-anon-checkbox"> <span data-i18n="comm_anon">Post
+                                            Anonymously</span>
                                     </label>
                                     <button type="submit" class="btn btn-primary">Publish Post / نشر المنشور</button>
                                 </div>
@@ -541,11 +642,12 @@
                 <div class="view-section" id="view-resources">
                     <div class="card" style="margin-bottom: 24px;">
                         <h2 class="card-title" data-i18n="res_title">Educational Resources Library</h2>
-                        
+
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" data-i18n="res_filter_age">Filter by Child Age</label>
-                                <select id="res-age-filter" class="form-control" onchange="renderEducationalResources()">
+                                <select id="res-age-filter" class="form-control"
+                                    onchange="renderEducationalResources()">
                                     <option value="All Ages">All Ages / جميع الأعمار</option>
                                     <option value="Age 3-8">Age 3-8 / من 3 إلى 8 سنوات</option>
                                     <option value="Age 5-12">Age 5-12 / من 5 إلى 12 سنة</option>
@@ -554,7 +656,8 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" data-i18n="res_filter_level">Filter by Autism Level</label>
-                                <select id="res-level-filter" class="form-control" onchange="renderEducationalResources()">
+                                <select id="res-level-filter" class="form-control"
+                                    onchange="renderEducationalResources()">
                                     <option value="All Levels">All Levels / جميع المستويات</option>
                                     <option value="Level 1 & 2">Level 1 & 2 / المستوى 1 و 2</option>
                                     <option value="Level 2 & 3">Level 2 & 3 / المستوى 2 و 3</option>
@@ -562,7 +665,8 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" data-i18n="res_filter_topic">Filter by Topic</label>
-                                <select id="res-topic-filter" class="form-control" onchange="renderEducationalResources()">
+                                <select id="res-topic-filter" class="form-control"
+                                    onchange="renderEducationalResources()">
                                     <option value="All Topics">All Topics / جميع المواضيع</option>
                                     <option value="Diagnosis">Diagnosis / التشخيص</option>
                                     <option value="Home Activities">Home Activities / أنشطة منزلية</option>
@@ -584,8 +688,12 @@
                         <div class="flex justify-between items-center" style="margin-bottom: 20px;">
                             <h2 class="card-title" data-i18n="notif_title" style="margin: 0;">Notifications</h2>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="markAllNotificationsRead()" data-i18n="notif_mark">Mark All as Read</button>
-                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="clearAllNotifications()" data-i18n="notif_clear">Clear All Notifications</button>
+                                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;"
+                                    onclick="markAllNotificationsRead()" data-i18n="notif_mark">Mark All as
+                                    Read</button>
+                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;"
+                                    onclick="clearAllNotifications()" data-i18n="notif_clear">Clear All
+                                    Notifications</button>
                             </div>
                         </div>
                         <div id="notifications-list-container"></div>
@@ -598,14 +706,20 @@
                 <div class="view-section" id="view-settings">
                     <div class="card">
                         <h2 class="card-title" data-i18n="set_title">Account Settings</h2>
-                        
+
                         <div class="settings-tabs">
-                            <button class="tab-btn active" onclick="toggleSettingsTab('profile')" data-i18n="set_profile">Profile</button>
-                            <button class="tab-btn" onclick="toggleSettingsTab('password')" data-i18n="set_password">Password</button>
-                            <button class="tab-btn" onclick="toggleSettingsTab('lang')" data-i18n="set_lang">Language</button>
-                            <button class="tab-btn" onclick="toggleSettingsTab('notif')" data-i18n="set_notif">Notifications</button>
-                            <button class="tab-btn" onclick="toggleSettingsTab('privacy')" data-i18n="set_privacy">Privacy</button>
-                            <button class="tab-btn" onclick="toggleSettingsTab('security')" data-i18n="set_security">Security</button>
+                            <button class="tab-btn active" onclick="toggleSettingsTab('profile')"
+                                data-i18n="set_profile">Profile</button>
+                            <button class="tab-btn" onclick="toggleSettingsTab('password')"
+                                data-i18n="set_password">Password</button>
+                            <button class="tab-btn" onclick="toggleSettingsTab('lang')"
+                                data-i18n="set_lang">Language</button>
+                            <button class="tab-btn" onclick="toggleSettingsTab('notif')"
+                                data-i18n="set_notif">Notifications</button>
+                            <button class="tab-btn" onclick="toggleSettingsTab('privacy')"
+                                data-i18n="set_privacy">Privacy</button>
+                            <button class="tab-btn" onclick="toggleSettingsTab('security')"
+                                data-i18n="set_security">Security</button>
                         </div>
 
                         <!-- Tab contents -->
@@ -613,17 +727,21 @@
                             <form onsubmit="handleSettingsUpdate(event, 'profile')">
                                 <div class="form-group" style="margin-top: 16px;">
                                     <label class="form-label">Parent Name / اسم ولي الأمر</label>
-                                    <input type="text" id="settings-name-input" class="form-control" placeholder="Your full name">
+                                    <input type="text" id="settings-name-input" class="form-control"
+                                        placeholder="Your full name">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Email Address / البريد الإلكتروني</label>
-                                    <input type="email" id="settings-email-input" class="form-control" placeholder="your@email.com">
+                                    <input type="email" id="settings-email-input" class="form-control"
+                                        placeholder="your@email.com">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Phone Number / رقم الجوال</label>
-                                    <input type="tel" id="settings-phone-input" class="form-control" placeholder="+966 50 000 0000">
+                                    <input type="tel" id="settings-phone-input" class="form-control"
+                                        placeholder="+966 50 000 0000">
                                 </div>
-                                <button type="submit" class="btn btn-primary" data-i18n="prof_save">Save Profile Settings</button>
+                                <button type="submit" class="btn btn-primary" data-i18n="prof_save">Save Profile
+                                    Settings</button>
                             </form>
                         </div>
 
@@ -637,14 +755,16 @@
                                     <label class="form-label">New Password / كلمة المرور الجديدة</label>
                                     <input type="password" class="form-control" placeholder="••••••••">
                                 </div>
-                                <button type="submit" class="btn btn-primary">Change Password / تحديث كلمة المرور</button>
+                                <button type="submit" class="btn btn-primary">Change Password / تحديث كلمة
+                                    المرور</button>
                             </form>
                         </div>
 
                         <div class="settings-tab-content" id="settings-tab-lang" style="display: none;">
                             <div style="margin-top: 16px;">
                                 <p style="margin-bottom: 12px;" data-i18n="set_lang">Language Settings</p>
-                                <button class="btn btn-outline" id="settingsLangBtn" onclick="toggleLanguage()">Switch English / عربي</button>
+                                <button class="btn btn-outline" id="settingsLangBtn" onclick="toggleLanguage()">Switch
+                                    English / عربي</button>
                             </div>
                         </div>
 
@@ -664,19 +784,27 @@
 
                         <div class="settings-tab-content" id="settings-tab-privacy" style="display: none;">
                             <div style="margin-top: 16px;">
-                                <p style="margin-bottom: 12px;">Manage how your profile and kid details are shared inside search vectors and support groups.</p>
+                                <p style="margin-bottom: 12px;">Manage how your profile and kid details are shared
+                                    inside search vectors and support groups.</p>
                                 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                                    <input type="checkbox" checked> Keep kid medical documents hidden from other group members
+                                    <input type="checkbox" checked> Keep kid medical documents hidden from other group
+                                    members
                                 </label>
                             </div>
                         </div>
 
                         <div class="settings-tab-content" id="settings-tab-security" style="display: none;">
                             <div style="margin-top: 16px;">
-                                <p style="font-weight: 600; margin-bottom: 8px;">HIPAA Login History Logs / سجلات الدخول والأمان</p>
-                                <div style="background: rgba(0,0,0,0.02); padding: 12px; border-radius: 8px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                    <div style="padding-bottom: 8px; border-bottom: 1px dashed rgba(0,0,0,0.05);"> <strong>2026-07-01 21:58:</strong> Successful Login - IP 192.168.1.1 (This session)</div>
-                                    <div style="padding-top: 8px;"> <strong>2026-06-30 09:12:</strong> Successful Login - IP 192.168.1.1</div>
+                                <p style="font-weight: 600; margin-bottom: 8px;">HIPAA Login History Logs / سجلات الدخول
+                                    والأمان</p>
+                                <div
+                                    style="background: rgba(0,0,0,0.02); padding: 12px; border-radius: 8px; font-size: 0.85rem; color: var(--color-text-muted);">
+                                    <div style="padding-bottom: 8px; border-bottom: 1px dashed rgba(0,0,0,0.05);">
+                                        <strong>2026-07-01 21:58:</strong> Successful Login - IP 192.168.1.1 (This
+                                        session)
+                                    </div>
+                                    <div style="padding-top: 8px;"> <strong>2026-06-30 09:12:</strong> Successful Login
+                                        - IP 192.168.1.1</div>
                                 </div>
                             </div>
                         </div>
@@ -691,22 +819,30 @@
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
                             <span style="font-size: 3rem;"></span>
                             <div>
-                                <h2 style="margin: 0; color: #9B1C1C;" data-i18n="em_title">Emergency Crisis Support</h2>
-                                <h4 style="margin: 4px 0 0; color: #7F1D1D;" data-i18n="em_contact">Healthcare Emergency Line: 911 / 997</h4>
+                                <h2 style="margin: 0; color: #9B1C1C;" data-i18n="em_title">Emergency Crisis Support
+                                </h2>
+                                <h4 style="margin: 4px 0 0; color: #7F1D1D;" data-i18n="em_contact">Healthcare Emergency
+                                    Line: 911 / 997</h4>
                             </div>
                         </div>
                         <p style="color: #7F1D1D; font-size: 1rem; line-height: 1.6;" data-i18n="em_desc">
-                            If your child is experiencing an acute behavioral crisis, severe panic, or an immediate sensory medical threat, contact our crisis staff right away.
+                            If your child is experiencing an acute behavioral crisis, severe panic, or an immediate
+                            sensory medical threat, contact our crisis staff right away.
                         </p>
-                        
-                        <button class="btn" style="background: #9B1C1C; color: white; margin-top: 16px; font-size: 1.1rem; padding: 12px 32px;" onclick="alert('Simulating emergency direct-line call to autism center on +966500000000 / جاري الاتصال المباشر بالطوارئ')" data-i18n="em_button">
+
+                        <button class="btn"
+                            style="background: #9B1C1C; color: white; margin-top: 16px; font-size: 1.1rem; padding: 12px 32px;"
+                            onclick="alert('Simulating emergency direct-line call to autism center on +966500000000 / جاري الاتصال المباشر بالطوارئ')"
+                            data-i18n="em_button">
                             Call Medical Center Now
                         </button>
                     </div>
 
                     <div class="card">
-                        <h3 class="card-title" style="margin-bottom: 12px;">Crisis De-escalation Advice / إرشادات التهدئة السريعة</h3>
-                        <ul style="list-style-position: inside; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; color: var(--color-text-main);">
+                        <h3 class="card-title" style="margin-bottom: 12px;">Crisis De-escalation Advice / إرشادات
+                            التهدئة السريعة</h3>
+                        <ul
+                            style="list-style-position: inside; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; color: var(--color-text-main);">
                             <li>Reduce auditory stimulation. Turn off TV, music, loud fans.</li>
                             <li>Dim the room lights or move to a quiet corner with soft cushioning.</li>
                             <li>Use deep touch pressure options like heavy blankets or wrapping.</li>
@@ -723,8 +859,10 @@
     <!-- Upload Modal -->
     <div class="modal-overlay" id="uploadModal">
         <div class="modal-content text-center">
-            <h2 id="modalTitle" style="color: var(--color-primary); margin-bottom: 16px;" data-i18n="modal_title">Uploading Drawing...</h2>
-            <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="modal_desc">Please wait while we securely process the image.</p>
+            <h2 id="modalTitle" style="color: var(--color-primary); margin-bottom: 16px;" data-i18n="modal_title">
+                Uploading Drawing...</h2>
+            <p style="color: var(--color-text-muted); margin-bottom: 24px;" data-i18n="modal_desc">Please wait while we
+                securely process the image.</p>
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="progressBar"></div>
             </div>
@@ -733,4 +871,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

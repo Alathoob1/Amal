@@ -15,16 +15,25 @@
 */
 
 const express = require('express');
+console.log("🚨 SERVER FILE LOADED - 12345");
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
+require("dotenv").config();
+
+const { GoogleGenAI } = require("@google/genai");
+
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Simple CORS middleware to allow requests from file://
 app.use((req, res, next) => {
@@ -56,22 +65,104 @@ async function initDB() {
         filename: path.join(__dirname, 'database.sqlite'),
         driver: sqlite3.Database
     });
-    
+
     // Initialize schema
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.exec(schema);
-    
+
     console.log('Database initialized.');
 }
-
 initDB().catch(console.error);
+async function testGemini() {
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: "Say only: Gemini Connected Successfully"
+        });
+
+        console.log(response.text);
+
+    } catch (err) {
+        console.error("Gemini Error:", err);
+    }
+}
+
+testGemini();
+async function analyzeDrawingWithGemini(base64Image) {
+
+    console.log("🚀 دخلت analyzeDrawingWithGemini");
+    console.log("🚀 Starting analyzeDrawingWithGemini");
+    console.log("API Key exists:", !!process.env.GEMINI_API_KEY);
+
+    try {
+        let mimeType = "image/jpeg";
+        let base64Data = base64Image;
+
+        if (base64Image.includes(";base64,")) {
+            const parts = base64Image.split(";base64,");
+            mimeType = parts[0].replace("data:", "");
+            base64Data = parts[1];
+        }
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: mimeType
+                    }
+                },
+                "الرجاء تحليل هذه الرسمة الخاصة بالطفل من الناحية النفسية والسلوكية لمساعدة الأهل والأطباء في فهم حالته النفسية. قم بالتركيز على الرموز المستخدمة، الألوان، والأشكال. يجب أن تكون الإجابة بصيغة JSON تحتوي على الحقول التالية باللغة العربية:\n" +
+                "{\n" +
+                "  \"summary\": \"تحليل مفصل وسهل الفهم باللغة العربية للرسمة والعناصر التي فيها ودلالتها النفسية والسلوكية والدوافع المحتملة خلفها\",\n" +
+                "  \"emotions\": \"مشاعر سائدة مستنتجة باللغة العربية (مثال: فرح، قلق، توتر، فضول، استقرار، حيوية)\",\n" +
+                "  \"confidence\": \"نسبة مئوية للثقة بالتحليل كرقم صحيح بدون رمز % (مثال: 85)\",\n" +
+                "  \"recommendation\": \"توصيات عملية ومفيدة للأهل باللغة العربية للتعامل مع الطفل ودعمه بناءً على التحليل\"\n" +
+                "}"
+            ],
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+
+        console.log("Gemini replied:");
+        console.log(response.text);
+
+        const resultJson = JSON.parse(response.text);
+
+        return {
+            summary: resultJson.summary || response.text,
+            emotions: resultJson.emotions || "غير محدد",
+            confidence: resultJson.confidence ? `${resultJson.confidence}%` : "85%",
+            recommendation: resultJson.recommendation || ""
+        };
+
+    } catch (err) {
+        console.error("❌ GEMINI ERROR:");
+        console.error(err);
+        throw err;
+    }
+}
+
+
+// Helper to resolve assigned doctorId for a child
+async function getAssignedDoctorId(childId) {
+    const row = await db.get('SELECT doctorId FROM patient_assignments WHERE childId = ?', [childId]);
+    if (row) return row.doctorId;
+
+    // Fallback: if no assignment exists yet, try to find the first doctor in users table
+    const fallbackDoc = await db.get('SELECT id FROM users WHERE role = "doctor" LIMIT 1');
+    return fallbackDoc ? fallbackDoc.id : null;
+}
 
 // ----------------------------------------------------
 // AUTHENTICATION
 // ----------------------------------------------------
 app.post('/api/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = req.body.email.trim().toLowerCase();
+        const password = req.body.password;
         const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
         if (!user) {
             return res.status(401).json({ success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' });
@@ -79,14 +170,14 @@ app.post('/api/login', async (req, res) => {
         if (user.status === 'معطل') {
             return res.status(403).json({ success: false, message: 'هذا الحساب معطل. يرجى مراجعة الإدارة.' });
         }
-        
+
         let isMatch = false;
         if (user.password === password) {
-            isMatch = true; 
+            isMatch = true;
         } else {
-            try { isMatch = await bcrypt.compare(password, user.password); } catch(e){}
+            try { isMatch = await bcrypt.compare(password, user.password); } catch (e) { }
         }
-        
+
         if (isMatch) {
             res.json({ success: true, role: user.role, userId: user.id, name: user.fullName });
         } else {
@@ -100,39 +191,40 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     try {
         // Register parent
+        console.log("LOGIN BODY:", req.body);
         const { fullName, email, password, phone, childName, childAge, childGender, childDiagnosis, childNotes } = req.body;
-        
+
         const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
         if (existing) {
             return res.status(400).json({ success: false, message: 'البريد الإلكتروني مستخدم مسبقاً.' });
         }
-        
+
         const hashedPw = await bcrypt.hash(password, 10);
         const result = await db.run(
             'INSERT INTO users (role, fullName, email, password, phone) VALUES (?, ?, ?, ?, ?)',
             ['parent', fullName, email, hashedPw, phone]
         );
         const parentId = result.lastID;
-        
+
         if (childName) {
             await db.run(
                 `INSERT INTO children (parentId, fullName, age, gender, diagnosis, notes) VALUES (?, ?, ?, ?, ?, ?)`,
                 [parentId, childName, childAge, childGender, childDiagnosis, childNotes]
             );
         }
-        
+
         // Log activity for Admin
         await db.run(
             'INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)',
             [parentId, 'parent', 'register', `تم تسجيل ولي أمر جديد: ${fullName}`]
         );
-        
+
         // Admin Notification
         const admin = await db.get('SELECT id FROM users WHERE role = "admin" LIMIT 1');
         if (admin) {
             await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [admin.id, `تم تسجيل ولي أمر جديد: ${fullName}`]);
         }
-        
+
         res.json({ success: true, message: 'تم إنشاء الحساب بنجاح', userId: parentId });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -151,7 +243,7 @@ app.get('/api/users/:id', async (req, res) => {
     try {
         const user = await db.get('SELECT id, role, fullName, email, phone, createdAt, status FROM users WHERE id = ?', [req.params.id]);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        
+
         let extra = {};
         if (user.role === 'parent') {
             extra.children = await db.all('SELECT * FROM children WHERE parentId = ?', [user.id]);
@@ -209,13 +301,106 @@ app.delete('/api/users/:id', async (req, res) => {
 // CHILDREN API
 // ----------------------------------------------------
 app.get('/api/children', async (req, res) => {
-    const children = await db.all('SELECT * FROM children');
-    res.json(children);
+    try {
+        const rows = await db.all(`
+            SELECT c.id, c.fullName as name, c.age, c.gender, c.diagnosis as autismLevel, c.notes, 'active' as status, c.createdAt,
+                   p.fullName as parentName,
+                   d.fullName as doctor
+            FROM children c
+            LEFT JOIN users p ON c.parentId = p.id
+            LEFT JOIN patient_assignments pa ON c.id = pa.childId
+            LEFT JOIN users d ON pa.doctorId = d.id
+        `);
+        res.json({ success: true, children: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/children/:id', async (req, res) => {
-    const child = await db.get('SELECT * FROM children WHERE id = ?', [req.params.id]);
-    res.json(child);
+    try {
+        const childId = req.params.id;
+        const child = await db.get(`
+            SELECT c.id, c.fullName as name, c.fullName as fullName, c.age, c.gender, c.diagnosis as autismLevel, c.notes, 'active' as status, c.createdAt,
+                   c.parentId,
+                   p.fullName as parentName,
+                   d.fullName as doctor,
+                   d.id as doctorId
+            FROM children c
+            LEFT JOIN users p ON c.parentId = p.id
+            LEFT JOIN patient_assignments pa ON c.id = pa.childId
+            LEFT JOIN users d ON pa.doctorId = d.id
+            WHERE c.id = ?
+        `, [childId]);
+
+        if (!child) {
+            return res.status(404).json({ success: false, message: 'Child not found' });
+        }
+
+        // Parse concatenated notes if present (medicalNotes | behavioralHistory | triggers | therapyHistory | commStyle)
+        let medicalNotes = child.notes || '';
+        let behavioralHistory = '';
+        let triggers = '';
+        let therapyHistoryStr = '';
+        let commStyle = '';
+
+        if (child.notes && child.notes.includes(' | ')) {
+            const parts = child.notes.split(' | ');
+            medicalNotes = parts[0] || '';
+            behavioralHistory = parts[1] || '';
+            triggers = parts[2] || '';
+            therapyHistoryStr = parts[3] || '';
+            commStyle = parts[4] || '';
+        }
+
+        // Fetch treatmentHistory from appointments
+        const appointments = await db.all(`
+            SELECT date, type, notes
+            FROM appointments
+            WHERE childId = ?
+            ORDER BY date DESC
+        `, [childId]);
+
+        const treatmentHistory = appointments.map(a => ({
+            date: a.date,
+            type: a.type,
+            notes: a.notes || 'لا توجد ملاحظات'
+        }));
+
+        // Fetch aiReports from analyses
+        const analyses = await db.all(`
+            SELECT createdAt as date, aiSummary as result
+            FROM analyses
+            WHERE childId = ? AND (status = 'reviewed' OR status = 'sent')
+            ORDER BY createdAt DESC
+        `, [childId]);
+
+        // Fetch doctorReports from reports
+        const reports = await db.all(`
+            SELECT r.createdAt as date, u.fullName as doctor, r.doctorNotes as notes
+            FROM reports r
+            LEFT JOIN users u ON r.doctorId = u.id
+            WHERE r.childId = ? AND r.status = 'sent'
+            ORDER BY r.createdAt DESC
+        `, [childId]);
+
+        res.json({
+            success: true,
+            child: {
+                ...child,
+                medicalNotes,
+                behavioralHistory,
+                triggers,
+                commStyle,
+                treatmentHistory,
+                aiReports: analyses,
+                doctorReports: reports,
+                parentNotes: []
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 app.post('/api/children', async (req, res) => {
@@ -256,7 +441,7 @@ app.get('/api/doctors', async (req, res) => {
             WHERE u.role = 'doctor'
         `);
         res.json(doctors);
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -268,20 +453,54 @@ app.post('/api/admin/add-doctor', async (req, res) => {
         if (existing) {
             return res.status(400).json({ success: false, message: 'البريد الإلكتروني مستخدم مسبقاً.' });
         }
-        
+
         const hashedPw = await bcrypt.hash(password, 10);
         const result = await db.run(
             'INSERT INTO users (role, fullName, email, password, phone) VALUES (?, ?, ?, ?, ?)',
             ['doctor', fullName, email, hashedPw, phone]
         );
         const doctorId = result.lastID;
-        
+
         await db.run(
             'INSERT INTO doctors (userId, specialization, experience) VALUES (?, ?, ?)',
             [doctorId, specialization, experience]
         );
-        
+
         res.json({ success: true, doctorId });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/admin/assign-doctor', async (req, res) => {
+    try {
+        const { childId, doctorId } = req.body;
+        if (!childId || !doctorId) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        // Find parentId from childId
+        const child = await db.get('SELECT parentId FROM children WHERE id = ?', [childId]);
+        if (!child) {
+            return res.status(404).json({ success: false, message: 'Child not found' });
+        }
+
+        // Check if there is already an assignment
+        const existing = await db.get('SELECT id FROM patient_assignments WHERE childId = ?', [childId]);
+        if (existing) {
+            await db.run('UPDATE patient_assignments SET doctorId = ?, parentId = ? WHERE childId = ?', [doctorId, child.parentId, childId]);
+        } else {
+            await db.run('INSERT INTO patient_assignments (doctorId, childId, parentId) VALUES (?, ?, ?)', [doctorId, childId, child.parentId]);
+        }
+
+        // Update doctorId in all pending analyses and appointments for this child
+        await db.run('UPDATE analyses SET doctorId = ? WHERE childId = ? AND status = "pending"', [doctorId, childId]);
+        await db.run('UPDATE appointments SET doctorId = ? WHERE childId = ? AND status = "Pending"', [doctorId, childId]);
+
+        // Log activity
+        await db.run('INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)', [1, 'admin', 'patient_reassigned', `تم إسناد الطفل (ID: ${childId}) إلى الطبيب (ID: ${doctorId})`]);
+
+        res.json({ success: true, message: 'تم إسناد الطبيب بنجاح' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -297,14 +516,29 @@ app.get('/api/appointments', async (req, res) => {
 
 app.post('/api/appointments', async (req, res) => {
     try {
-        const { childId, parentId, doctorId, date, time, status, notes } = req.body;
+        const { childId, parentId, date, time, status, notes } = req.body;
+
+
+
         const result = await db.run(
             'INSERT INTO appointments (childId, parentId, doctorId, date, time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [childId, parentId, doctorId, date, time, status || 'Pending', notes]
         );
         // Link doctor and patient
-        await db.run('INSERT OR IGNORE INTO patient_assignments (doctorId, childId, parentId) VALUES (?, ?, ?)', [doctorId, childId, parentId]);
-        
+        await db.run(`
+INSERT INTO analyses (
+childId,
+parentId,
+doctorId,
+imagePath,
+status
+)
+VALUES (?, ?, NULL, ?, 'Pending Assignment')
+`, [
+            childId,
+            parentId,
+            imagePath
+        ]);
         res.json({ success: true, appointmentId: result.lastID });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -315,14 +549,14 @@ app.put('/api/appointments/:id', async (req, res) => {
     try {
         const { status, notes } = req.body;
         await db.run('UPDATE appointments SET status = ?, notes = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?', [status, notes, req.params.id]);
-        
+
         const appt = await db.get('SELECT parentId, doctorId FROM appointments WHERE id = ?', [req.params.id]);
         if (appt) {
-             let msg = `تم تحديث حالة الموعد إلى: ${status}`;
-             await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [appt.parentId, msg]);
-             await db.run('INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)', [appt.doctorId, 'doctor', 'appointment_update', msg]);
+            let msg = `تم تحديث حالة الموعد إلى: ${status}`;
+            await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [appt.parentId, msg]);
+            await db.run('INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)', [appt.doctorId, 'doctor', 'appointment_update', msg]);
         }
-        
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -338,22 +572,64 @@ app.get('/api/analyses', async (req, res) => {
 });
 
 app.post('/api/analyses', async (req, res) => {
+    console.log("🔥 /api/analyses called");
     try {
-        const { childId, parentId, doctorId, title, aiResult, aiConfidence, aiSummary } = req.body;
+        const {
+            childId,
+            parentId,
+            title,
+            uploadedFileName,
+            uploadedImage
+        } = req.body;
+        console.log("وصلت للـ API");
+
+        console.log("title:", title);
+
+        console.log("image exists:", !!uploadedImage);
+
+        const analysis = await analyzeDrawingWithGemini(uploadedImage);
+
+        console.log("Gemini Result:", analysis);
+        console.log("===== ANALYSIS =====");
+        console.log(analysis);
+        console.log("====================");
+        // Retrieve the assigned doctor for this child
+        let doctorId = await getAssignedDoctorId(childId);
+
+        // إذا ما فيه طبيب نخليها تنتظر التعيين
+        const status = doctorId ? 'pending' : 'waiting_assignment';
+
         const result = await db.run(
-            'INSERT INTO analyses (childId, parentId, doctorId, title, aiResult, aiConfidence, aiSummary) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [childId, parentId, doctorId, title, aiResult, aiConfidence, aiSummary]
+            `INSERT INTO analyses
+(childId,parentId,doctorId,title,uploadedFileName,uploadedImage,aiResult,aiConfidence,aiSummary,status)
+VALUES (?,?,?,?,?,?,?,?,?,?)`,
+            [
+                childId,
+                parentId,
+                doctorId,
+                title,
+                uploadedFileName,
+                uploadedImage,
+                analysis.emotions,
+                analysis.confidence,
+                analysis.summary,
+                status
+            ]
         );
         // Link doctor and patient
         await db.run('INSERT OR IGNORE INTO patient_assignments (doctorId, childId, parentId) VALUES (?, ?, ?)', [doctorId, childId, parentId]);
-        
+
         // Notify doctor
-        await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [doctorId, 'طلب تحليل ذكاء اصطناعي جديد بانتظار مراجعتك']);
-        
+        if (doctorId) {
+            await db.run(
+                'INSERT INTO notifications (userId,text) VALUES (?,?)',
+                [doctorId, 'طلب تحليل جديد']
+            );
+        }
         // Log
         const parent = await db.get('SELECT fullName FROM users WHERE id = ?', [parentId]);
         await db.run('INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)', [parentId, 'parent', 'analysis_request', `طلب تحليل جديد من ولي الأمر: ${parent.fullName}`]);
-        
+
         res.json({ success: true, analysisId: result.lastID });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -390,23 +666,23 @@ app.put('/api/analyses/:id/review', async (req, res) => {
             'UPDATE analyses SET doctorReview = ?, doctorRecommendations = ?, status = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
             [doctorReview, doctorRecommendations, status, req.params.id]
         );
-        
+
         const analysis = await db.get('SELECT * FROM analyses WHERE id = ?', [req.params.id]);
-        
+
         if (status === 'sent') {
             // Create a report
             await db.run(
                 'INSERT INTO reports (childId, parentId, doctorId, analysisId, title, progress, recommendations, doctorNotes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [analysis.childId, analysis.parentId, analysis.doctorId, analysis.id, analysis.title, analysis.aiSummary, doctorRecommendations, doctorReview, 'sent']
             );
-            
+
             // Notify parent
             await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [analysis.parentId, 'تم استلام تقرير تحليل جديد من الطبيب']);
-            
+
             // Log
             await db.run('INSERT INTO activity_logs (actorId, actorRole, action, description) VALUES (?, ?, ?, ?)', [analysis.doctorId, 'doctor', 'analysis_reviewed', `الطبيب قام بمراجعة واعتماد التحليل للطفل (ID: ${analysis.childId})`]);
         }
-        
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -479,7 +755,7 @@ app.get('/api/users/:userId/conversations', async (req, res) => {
             WHERE c.participant1Id = ? OR c.participant2Id = ?
             ORDER BY c.updatedAt DESC
         `, [userId, userId]);
-        
+
         // Format for frontend
         const formatted = conversations.map(c => {
             const otherParticipantId = c.participant1Id == userId ? c.participant2Id : c.participant1Id;
@@ -492,7 +768,7 @@ app.get('/api/users/:userId/conversations', async (req, res) => {
             };
         });
         res.json(formatted);
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -501,7 +777,7 @@ app.get('/api/conversations/:conversationId/messages', async (req, res) => {
     try {
         const messages = await db.all('SELECT * FROM messages WHERE conversationId = ? ORDER BY createdAt ASC', [req.params.conversationId]);
         res.json(messages);
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -511,7 +787,7 @@ app.post('/api/messages', async (req, res) => {
         const senderId = req.body.senderId || req.body.sender_id;
         const receiverId = req.body.receiverId || req.body.receiver_id;
         const messageText = req.body.message || req.body.text;
-        
+
         if (!senderId || !receiverId || !messageText) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -533,10 +809,10 @@ app.post('/api/messages', async (req, res) => {
             'INSERT INTO messages (conversationId, senderId, receiverId, message) VALUES (?, ?, ?, ?)',
             [conv.id, senderId, receiverId, messageText]
         );
-        
+
         // Notify
         await db.run('INSERT INTO notifications (userId, text) VALUES (?, ?)', [receiverId, 'لديك رسالة جديدة']);
-        
+
         res.json({ success: true, messageId: result.lastID, conversationId: conv.id });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -606,12 +882,34 @@ app.get('/api/parents/:id/data', async (req, res) => {
         const parentId = req.params.id;
         const profile = await db.get('SELECT id, fullName, email, phone FROM users WHERE id = ? AND role = "parent"', [parentId]);
         if (!profile) return res.status(404).json({ error: 'Parent not found' });
-        
-        const children = await db.all('SELECT * FROM children WHERE parentId = ?', [parentId]);
+
+        const children = await db.all(`
+            SELECT c.*, u.fullName as doctorName, u.id as doctorId
+            FROM children c
+            LEFT JOIN patient_assignments pa ON c.id = pa.childId
+            LEFT JOIN users u ON pa.doctorId = u.id
+            WHERE c.parentId = ?
+        `, [parentId]);
+        children.forEach(child => {
+            const parts = (child.notes || '').split(' | ');
+
+            child.medicalNotes = parts[0] || '';
+            child.behavioralHistory = parts[1] || '';
+            child.emotionalTriggers = parts[2] || '';
+            child.therapyHistory = parts[3] || '';
+            child.communicationStyle = parts[4] || '';
+        });
         const activities = await db.all('SELECT a.* FROM activities a JOIN children c ON a.childId = c.id WHERE c.parentId = ? ORDER BY a.createdAt DESC', [parentId]);
         const appointments = await db.all('SELECT a.*, u.fullName as doctorName FROM appointments a JOIN users u ON a.doctorId = u.id WHERE a.parentId = ? ORDER BY a.date DESC', [parentId]);
         const notifications = await db.all('SELECT * FROM notifications WHERE userId = ? ORDER BY id DESC', [parentId]);
-        const reports = await db.all('SELECT r.*, c.fullName as childName FROM reports r JOIN children c ON r.childId = c.id WHERE r.parentId = ? AND r.status = "sent" ORDER BY r.createdAt DESC', [parentId]);
+        const reports = await db.all(`
+            SELECT r.*, c.fullName as childName, a.uploadedImage 
+            FROM reports r 
+            JOIN children c ON r.childId = c.id 
+            LEFT JOIN analyses a ON r.analysisId = a.id
+            WHERE r.parentId = ? AND r.status = "sent" 
+            ORDER BY r.createdAt DESC
+        `, [parentId]);
         const analyses = await db.all('SELECT a.*, c.fullName as childName FROM analyses a JOIN children c ON a.childId = c.id WHERE a.parentId = ? ORDER BY a.createdAt DESC', [parentId]);
 
         res.json({
@@ -633,7 +931,7 @@ app.get('/api/doctors/:id/data', async (req, res) => {
         const doctorId = req.params.id;
         const profile = await db.get('SELECT id, fullName, email, phone FROM users WHERE id = ? AND role = "doctor"', [doctorId]);
         if (!profile) return res.status(404).json({ error: 'Doctor not found' });
-        
+
         const doctorDetails = await db.get('SELECT * FROM doctors WHERE userId = ?', [doctorId]);
 
         // Get unique children linked to this doctor via patient_assignments
@@ -645,10 +943,45 @@ app.get('/api/doctors/:id/data', async (req, res) => {
             WHERE pa.doctorId = ?
         `, [doctorId]);
 
-        const activities = await db.all('SELECT a.*, c.fullName as childName FROM activities a JOIN children c ON a.childId = c.id WHERE a.doctorId = ? ORDER BY a.createdAt DESC', [doctorId]);
-        const appointments = await db.all('SELECT a.*, c.fullName as childName, u.fullName as parentName FROM appointments a JOIN children c ON a.childId = c.id JOIN users u ON a.parentId = u.id WHERE a.doctorId = ? ORDER BY a.date DESC', [doctorId]);
-        const reports = await db.all('SELECT r.*, c.fullName as childName, u.fullName as parentName FROM reports r JOIN children c ON r.childId = c.id JOIN users u ON c.parentId = u.id WHERE r.doctorId = ? ORDER BY r.id DESC', [doctorId]);
-        const analyses = await db.all('SELECT a.*, c.fullName as childName, u.fullName as parentName FROM analyses a JOIN children c ON a.childId = c.id JOIN users u ON a.parentId = u.id WHERE a.doctorId = ? ORDER BY a.createdAt DESC', [doctorId]);
+        const activities = await db.all(`
+            SELECT DISTINCT a.*, c.fullName as childName 
+            FROM activities a 
+            JOIN children c ON a.childId = c.id 
+            JOIN patient_assignments pa ON c.id = pa.childId
+            WHERE pa.doctorId = ? 
+            ORDER BY a.createdAt DESC
+        `, [doctorId]);
+
+        const appointments = await db.all(`
+            SELECT DISTINCT a.*, c.fullName as childName, u.fullName as parentName 
+            FROM appointments a 
+            JOIN children c ON a.childId = c.id 
+            JOIN users u ON a.parentId = u.id 
+            JOIN patient_assignments pa ON c.id = pa.childId
+            WHERE pa.doctorId = ? 
+            ORDER BY a.date DESC
+        `, [doctorId]);
+
+        const reports = await db.all(`
+            SELECT DISTINCT r.*, c.fullName as childName, u.fullName as parentName 
+            FROM reports r 
+            JOIN children c ON r.childId = c.id 
+            JOIN users u ON c.parentId = u.id 
+            JOIN patient_assignments pa ON c.id = pa.childId
+            WHERE pa.doctorId = ? 
+            ORDER BY r.id DESC
+        `, [doctorId]);
+
+        const analyses = await db.all(`
+            SELECT DISTINCT a.*, c.fullName as childName, u.fullName as parentName 
+            FROM analyses a 
+            JOIN children c ON a.childId = c.id 
+            JOIN users u ON a.parentId = u.id 
+            JOIN patient_assignments pa ON c.id = pa.childId
+            WHERE pa.doctorId = ? 
+            ORDER BY a.createdAt DESC
+        `, [doctorId]);
+
         const notifications = await db.all('SELECT * FROM notifications WHERE userId = ? ORDER BY id DESC', [doctorId]);
 
         res.json({
@@ -673,7 +1006,7 @@ app.get('/api/admin/stats', async (req, res) => {
         const pendingAnalyses = await db.get('SELECT COUNT(*) as count FROM analyses WHERE status = "pending"');
         const totalReports = await db.get('SELECT COUNT(*) as count FROM reports');
         const totalAppointments = await db.get('SELECT COUNT(*) as count FROM appointments');
-        
+
         const logs = await db.all('SELECT * FROM activity_logs ORDER BY id DESC LIMIT 20');
         const users = await db.all('SELECT id, role, fullName, email, phone, createdAt FROM users ORDER BY id DESC LIMIT 10');
 
@@ -749,6 +1082,34 @@ app.delete('/api/educational_content/:id', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+// =====================================================
+// PENDING ASSIGNMENTS
+// =====================================================
+
+app.get('/api/admin/pending-assignments', async (req, res) => {
+    try {
+        const rows = await db.all(`
+            SELECT
+                a.id,
+                a.title,
+                c.fullName AS childName,
+                u.fullName AS parentName
+            FROM analyses a
+            JOIN children c ON a.childId = c.id
+            JOIN users u ON a.parentId = u.id
+            WHERE a.status = 'waiting_assignment'
+            ORDER BY a.createdAt DESC
+        `);
+
+        res.json(rows);
+
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
 

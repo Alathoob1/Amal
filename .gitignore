@@ -4,3 +4,11 @@ aura-app/node_modules/
 *.log
 dist/
 *.sqlite  
+.env
+node_modules/
+*.sqlite
+*.log
+dist/
+
+.DS_Store
+*.zip

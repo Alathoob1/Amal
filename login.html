@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,113 +24,140 @@
             max-width: 420px;
             margin: 8vh auto;
         }
+
         .register-container {
             max-width: 720px;
             margin: 5vh auto;
         }
+
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
+
         @media (max-width: 600px) {
             .form-grid {
                 grid-template-columns: 1fr;
             }
         }
+
         .form-section-title {
             grid-column: 1 / -1;
             font-size: 1.1rem;
             font-weight: 700;
             color: var(--color-primary);
-            border-bottom: 1px solid rgba(0,0,0,0.08);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
             padding-bottom: 6px;
             margin-top: 10px;
             margin-bottom: 10px;
         }
     </style>
 </head>
+
 <body>
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z" stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="var(--color-gold)"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path
+                    d="M6 16C3.79 16 2 14.21 2 12C2 9.79 3.79 8 6 8C8.5 8 10.5 10.5 12 12C13.5 13.5 15.5 16 18 16C20.21 16 22 14.21 22 12C22 9.79 20.21 8 18 8C15.5 8 13.5 10.5 12 12C10.5 13.5 8.5 16 6 16Z"
+                    stroke="var(--color-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="12" cy="9" r="2.5" fill="var(--color-gold)" />
+            </svg>
             أمل
         </a>
         <div class="navbar-links">
             <a href="index.html" data-i18n="nav_home">Home</a>
-            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px; margin-inline-start: 16px;">EN / AR</button>
+            <button id="langToggle" class="btn btn-outline" style="padding: 4px 12px; margin-inline-start: 16px;">EN /
+                AR</button>
         </div>
     </nav>
 
     <div class="container">
-        
+
         <!-- View 1: Login Card -->
         <div class="card login-container" id="loginCard">
-            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 24px; font-size: 1.8rem;" data-i18n="login_title">Welcome Back</h2>
-            
-            <div id="loginAlert" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
-            
+            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 24px; font-size: 1.8rem;"
+                data-i18n="login_title">Welcome Back</h2>
+
+            <div id="loginAlert"
+                style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+            </div>
+
             <form id="loginForm">
                 <div class="form-group">
                     <label class="form-label" data-i18n="login_email">Email Address</label>
                     <input type="email" id="emailInput" class="form-control" required placeholder="name@example.com">
                 </div>
-                
+
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label class="form-label" data-i18n="login_password">Password</label>
                     <input type="password" id="passwordInput" class="form-control" required placeholder="••••••••">
                 </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px;" data-i18n="btn_login_submit">Sign In</button>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px;"
+                    data-i18n="btn_login_submit">Sign In</button>
             </form>
-            
+
             <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 0.9rem;">
-                <a href="#" onclick="showForgotCard()" style="color: var(--color-text-muted); text-decoration: none;" data-i18n="login_forgot">Forgot password?</a>
-                <a href="#" onclick="showRegisterCard()" style="color: var(--color-primary); font-weight: 600; text-decoration: none;">Create Parent Account / إنشاء حساب جديد</a>
+                <a href="#" onclick="showForgotCard()" style="color: var(--color-text-muted); text-decoration: none;"
+                    data-i18n="login_forgot">Forgot password?</a>
+                <a href="#" onclick="showRegisterCard()"
+                    style="color: var(--color-primary); font-weight: 600; text-decoration: none;">Create Parent Account
+                    / إنشاء حساب جديد</a>
             </div>
         </div>
 
         <!-- View 2: Registration Card -->
         <div class="card register-container" id="registerCard" style="display: none;">
-            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 8px; font-size: 1.8rem;">Create Parent Account</h2>
-            <p class="text-center" style="color: var(--color-text-muted); margin-bottom: 24px;">Join Amal and register your child's clinical profile securely.</p>
-            
-            <div id="registerAlert" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
-            
+            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 8px; font-size: 1.8rem;">Create
+                Parent Account</h2>
+            <p class="text-center" style="color: var(--color-text-muted); margin-bottom: 24px;">Join Amal and register
+                your child's clinical profile securely.</p>
+
+            <div id="registerAlert"
+                style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+            </div>
+
             <form id="registerForm" onsubmit="handleRegistrationSubmit(event)">
                 <div class="form-grid">
-                    
+
                     <!-- Section: Parent Info -->
                     <div class="form-section-title">Parent Details / بيانات ولي الأمر</div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Full Name / الاسم الكامل</label>
-                        <input type="text" id="regParentName" class="form-control" required placeholder="Sarah Al-Ahmed">
+                        <input type="text" id="regParentName" class="form-control" required
+                            placeholder="Sarah Al-Ahmed">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email Address / البريد الإلكتروني</label>
-                        <input type="email" id="regParentEmail" class="form-control" required placeholder="parent@example.com">
+                        <input type="email" id="regParentEmail" class="form-control" required
+                            placeholder="parent@example.com">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number / رقم الجوال</label>
-                        <input type="tel" id="regParentPhone" class="form-control" required placeholder="+966 50 000 0000">
+                        <input type="tel" id="regParentPhone" class="form-control" required
+                            placeholder="+966 50 000 0000">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password / كلمة المرور</label>
-                        <input type="password" id="regParentPassword" class="form-control" required placeholder="••••••••">
+                        <input type="password" id="regParentPassword" class="form-control" required
+                            placeholder="••••••••">
                     </div>
-                    
+
                     <!-- Section: Child Info -->
                     <div class="form-section-title">Child Details / بيانات الطفل</div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Child Name / اسم الطفل</label>
                         <input type="text" id="regChildName" class="form-control" required placeholder="Leo / يوسف">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Child Age / عمر الطفل</label>
-                        <input type="number" id="regChildAge" class="form-control" required placeholder="6" min="2" max="18">
+                        <input type="number" id="regChildAge" class="form-control" required placeholder="6" min="2"
+                            max="18">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Child Gender / جنس الطفل</label>
@@ -141,64 +169,83 @@
                     <div class="form-group">
                         <label class="form-label">Autism level / مستوى طيف التوحد</label>
                         <select id="regChildLevel" class="form-control" required>
-                            <option value="Level 1 (Mild ASD) / المستوى الأول">Level 1 (Mild ASD) / المستوى الأول</option>
-                            <option value="Level 2 (Moderate ASD) / المستوى الثاني">Level 2 (Moderate ASD) / المستوى الثاني</option>
-                            <option value="Level 3 (Severe ASD) / المستوى الثالث">Level 3 (Severe ASD) / المستوى الثالث</option>
+                            <option value="Level 1 (Mild ASD) / المستوى الأول">Level 1 (Mild ASD) / المستوى الأول
+                            </option>
+                            <option value="Level 2 (Moderate ASD) / المستوى الثاني">Level 2 (Moderate ASD) / المستوى
+                                الثاني</option>
+                            <option value="Level 3 (Severe ASD) / المستوى الثالث">Level 3 (Severe ASD) / المستوى الثالث
+                            </option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label">Communication Style / أسلوب التواصل</label>
-                        <textarea id="regChildCom" class="form-control" rows="2" placeholder="e.g. Uses gestures, tablet, verbal cues / مثال: يستخدم التابلت والإشارات للتعبير..."></textarea>
+                        <textarea id="regChildCom" class="form-control" rows="2"
+                            placeholder="e.g. Uses gestures, tablet, verbal cues / مثال: يستخدم التابلت والإشارات للتعبير..."></textarea>
                     </div>
-                    
+
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label">Behavioral History & Stimming / التاريخ السلوكي والاستثارة</label>
-                        <textarea id="regChildHistory" class="form-control" rows="2" placeholder="e.g. Pacing when anxious, hand flapping / مثال: يرفرف بيده عند الحماس..."></textarea>
+                        <textarea id="regChildHistory" class="form-control" rows="2"
+                            placeholder="e.g. Pacing when anxious, hand flapping / مثال: يرفرف بيده عند الحماس..."></textarea>
                     </div>
 
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label">Emotional Triggers / المحفزات العاطفية</label>
-                        <textarea id="regChildTriggers" class="form-control" rows="2" placeholder="e.g. Loud sirens, bright flashing lights / مثال: الأصوات المرتفعة والمفاجئة..."></textarea>
+                        <textarea id="regChildTriggers" class="form-control" rows="2"
+                            placeholder="e.g. Loud sirens, bright flashing lights / مثال: الأصوات المرتفعة والمفاجئة..."></textarea>
                     </div>
 
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label">Medical Notes & Allergies / الملاحظات الطبية والحساسية</label>
-                        <textarea id="regChildNotes" class="form-control" rows="2" placeholder="e.g. Sensitive to gluten / مثال: لديه حساسية قمح خفيفة..."></textarea>
+                        <textarea id="regChildNotes" class="form-control" rows="2"
+                            placeholder="e.g. Sensitive to gluten / مثال: لديه حساسية قمح خفيفة..."></textarea>
                     </div>
 
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label">Therapy History / تاريخ الجلسات والعلاجات السابقة</label>
-                        <textarea id="regChildTherapy" class="form-control" rows="2" placeholder="e.g. Speech therapy for 6 months / مثال: جلسات تخاطب لمدة 6 أشهر..."></textarea>
+                        <textarea id="regChildTherapy" class="form-control" rows="2"
+                            placeholder="e.g. Speech therapy for 6 months / مثال: جلسات تخاطب لمدة 6 أشهر..."></textarea>
                     </div>
                 </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 16px;">Create Account & Log In / إنشاء الحساب والدخول</button>
+
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 16px;">Create Account & Log In /
+                    إنشاء الحساب والدخول</button>
             </form>
-            
+
             <div class="text-center mt-2" style="font-size: 0.9rem;">
-                <a href="#" onclick="showLoginCard()" style="color: var(--color-text-muted); text-decoration: none;">Already have an account? Sign In / لديك حساب بالفعل؟ تسجيل الدخول</a>
+                <a href="#" onclick="showLoginCard()"
+                    style="color: var(--color-text-muted); text-decoration: none;">Already have an account? Sign In /
+                    لديك حساب بالفعل؟ تسجيل الدخول</a>
             </div>
         </div>
 
         <!-- View 3: Forgot Password Card -->
         <div class="card login-container" id="forgotCard" style="display: none;">
-            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 12px; font-size: 1.8rem;">Forgot Password</h2>
-            <p style="color: var(--color-text-muted); text-align: center; font-size: 0.9rem; margin-bottom: 24px;">Enter your email address and we'll simulate sending a reset link.</p>
-            
-            <div id="forgotAlert" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
-            
+            <h2 class="text-center" style="color: var(--color-primary); margin-bottom: 12px; font-size: 1.8rem;">Forgot
+                Password</h2>
+            <p style="color: var(--color-text-muted); text-align: center; font-size: 0.9rem; margin-bottom: 24px;">Enter
+                your email address and we'll simulate sending a reset link.</p>
+
+            <div id="forgotAlert"
+                style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+            </div>
+
             <form id="forgotForm" onsubmit="handleForgotSubmit(event)">
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label class="form-label">Email Address / البريد الإلكتروني</label>
                     <input type="email" id="forgotEmail" class="form-control" required placeholder="parent@example.com">
                 </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Send Reset Link / إرسال رابط استعادة كلمة المرور</button>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Send Reset Link /
+                    إرسال رابط استعادة كلمة المرور</button>
             </form>
-            
+
             <div class="text-center mt-2" style="font-size: 0.9rem;">
-                <a href="#" onclick="showLoginCard()" style="color: var(--color-text-muted); text-decoration: none;">Back to Login / العودة لتسجيل الدخول</a>
+                <a href="#" onclick="showLoginCard()"
+                    style="color: var(--color-text-muted); text-decoration: none;">Back to Login / العودة لتسجيل
+                    الدخول</a>
             </div>
         </div>
 
@@ -210,7 +257,7 @@
         const loginCard = document.getElementById('loginCard');
         const registerCard = document.getElementById('registerCard');
         const forgotCard = document.getElementById('forgotCard');
-        
+
         const loginAlert = document.getElementById('loginAlert');
         const registerAlert = document.getElementById('registerAlert');
         const forgotAlert = document.getElementById('forgotAlert');
@@ -259,7 +306,7 @@
         // Login Handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim().toLowerCase();
             const password = document.getElementById('passwordInput').value;
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -272,7 +319,7 @@
                 const userEmail = email.toLowerCase();
                 localStorage.setItem('auraActiveUserEmail', userEmail);
                 showAlert(loginAlert, 'Login successful! Redirecting... / تم تسجيل الدخول بنجاح!', 'success');
-                
+
                 let portal = 'parent.html';
                 if (role === 'admin') {
                     portal = 'admin.html';
@@ -296,13 +343,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     localStorage.setItem('auraUserId', data.userId);
                     localStorage.setItem('auraUserRole', data.role);
-                    
+
                     loginSuccess(data.role || 'parent');
                 } else {
                     showAlert(loginAlert, data.message || 'Invalid email or password. / البريد الإلكتروني أو كلمة المرور غير صحيحة.');
@@ -319,19 +366,19 @@
         // Registration Handler
         async function handleRegistrationSubmit(e) {
             e.preventDefault();
-            const name     = document.getElementById('regParentName').value.trim();
-            const email    = document.getElementById('regParentEmail').value.trim().toLowerCase();
-            const phone    = document.getElementById('regParentPhone').value.trim();
+            const name = document.getElementById('regParentName').value.trim();
+            const email = document.getElementById('regParentEmail').value.trim().toLowerCase();
+            const phone = document.getElementById('regParentPhone').value.trim();
             const password = document.getElementById('regParentPassword').value;
 
-            const childName    = document.getElementById('regChildName').value.trim();
-            const childAge     = parseInt(document.getElementById('regChildAge').value) || 6;
-            const childGender  = document.getElementById('regChildGender').value;
-            const childLevel   = document.getElementById('regChildLevel').value;
-            const childCom     = document.getElementById('regChildCom').value.trim();
+            const childName = document.getElementById('regChildName').value.trim();
+            const childAge = parseInt(document.getElementById('regChildAge').value) || 6;
+            const childGender = document.getElementById('regChildGender').value;
+            const childLevel = document.getElementById('regChildLevel').value;
+            const childCom = document.getElementById('regChildCom').value.trim();
             const childHistory = document.getElementById('regChildHistory').value.trim();
-            const childTriggers= document.getElementById('regChildTriggers').value.trim();
-            const childNotes   = document.getElementById('regChildNotes').value.trim();
+            const childTriggers = document.getElementById('regChildTriggers').value.trim();
+            const childNotes = document.getElementById('regChildNotes').value.trim();
             const childTherapy = document.getElementById('regChildTherapy').value.trim();
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -346,7 +393,7 @@
                     body: JSON.stringify({ fullName: name, email, password, phone, childName, childAge, childGender, childDiagnosis: childLevel, childNotes: childNotes + ' | ' + childHistory + ' | ' + childTriggers + ' | ' + childTherapy + ' | ' + childCom })
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     localStorage.setItem('auraRegSuccess', '1');
                     window.location.href = 'login.html';
@@ -368,9 +415,9 @@
             const email = document.getElementById('forgotEmail').value.trim();
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
-            
+
             showAlert(forgotAlert, 'Reset link sent successfully (Simulation)! Check your email inbox. / تم إرسال رابط استعادة كلمة المرور بنجاح (محاكاة)!', 'success');
-            
+
             setTimeout(() => {
                 submitBtn.disabled = false;
                 showLoginCard();
@@ -379,4 +426,5 @@
         }
     </script>
 </body>
+
 </html>

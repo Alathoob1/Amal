@@ -14,7 +14,7 @@ const translations = {
     welcome_desc: "AI-assisted pediatric psychology platform designed with sensory safety and empathy at its core.",
     btn_get_started: "Get Started",
     disclaimer: "This AI analysis provides supportive behavioral indicators, not a clinical diagnosis. All reports are pending human medical review.",
-    
+
     // Parent Dashboard Navigation
     nav_dashboard: "Dashboard",
     nav_profile: "Child Profile",
@@ -138,7 +138,7 @@ const translations = {
     em_contact: "Healthcare Emergency Line",
     em_desc: "If your child is experiencing an acute behavioral or emotional crisis, contact us immediately.",
     em_button: "Call Medical Center Now",
-    
+
     // Doctor Dashboard
     dd_title: "Doctor Review Dashboard",
     dd_queue: "Pending Reviews (3)",
@@ -151,7 +151,7 @@ const translations = {
     patient_name_2: "Patient: Sara A. (Age 9)",
     ai_confidence_2: "AI Confidence: 92%",
     uploaded_time_2: "Uploaded: 5 hours ago",
-    
+
     // Admin Dashboard
     ad_title: "System Overview",
     ad_users: "User Management",
@@ -162,14 +162,14 @@ const translations = {
     ad_stat_reports: "Reports Processed",
     ad_stat_alerts: "Flagged Posts",
     ad_recent_logs: "Recent Audit Logs",
-    
+
     // Login
     login_title: "Welcome Back",
     login_email: "Email Address",
     login_password: "Password",
     btn_login_submit: "Sign In",
     login_forgot: "Forgot password?",
-    
+
     // Modal
     modal_title: "Uploading Drawing...",
     modal_desc: "Please wait while we securely process the image.",
@@ -189,7 +189,7 @@ const translations = {
     welcome_desc: "منصة مساعدة نفسية للأطفال مدعومة بالذكاء الاصطناعي، مصممة بأعلى معايير الأمان الحسي والتعاطف.",
     btn_get_started: "ابدأ الآن",
     disclaimer: "يوفر تحليل الذكاء الاصطناعي مؤشرات سلوكية داعمة، وليس تشخيصًا سريريًا. تخضع جميع التقارير للمراجعة الطبية البشرية.",
-    
+
     // Parent Dashboard Navigation
     nav_dashboard: "لوحة التحكم",
     nav_profile: "ملف الطفل",
@@ -313,7 +313,7 @@ const translations = {
     em_contact: "خط الطوارئ للمركز الصحي",
     em_desc: "إذا كان طفلك يمر بأزمة سلوكية حادة أو عاطفية طارئة، اتصل بنا فوراً للدعم السريع المباشر.",
     em_button: "اتصل بالمركز الصحي الآن",
-    
+
     // Doctor Dashboard
     dd_title: "لوحة مراجعة الطبيب",
     dd_queue: "المراجعات المعلقة (3)",
@@ -326,7 +326,7 @@ const translations = {
     patient_name_2: "المريض: سارة أ. (العمر 9)",
     ai_confidence_2: "ثقة الذكاء الاصطناعي: 92%",
     uploaded_time_2: "تم الرفع: منذ 5 ساعات",
-    
+
     // Admin Dashboard
     ad_title: "لوحة المتابعة",
     ad_users: "إدارة المستخدمين",
@@ -337,14 +337,14 @@ const translations = {
     ad_stat_reports: "التقارير المعالجة",
     ad_stat_alerts: "المنشورات المبلغ عنها",
     ad_recent_logs: "سجلات التدقيق الحديثة",
-    
+
     // Login
     login_title: "مرحباً بعودتك",
     login_email: "البريد الإلكتروني",
     login_password: "كلمة المرور",
     btn_login_submit: "تسجيل الدخول",
     login_forgot: "هل نسيت كلمة المرور؟",
-    
+
     // Modal
     modal_title: "جاري رفع الرسمة...",
     modal_desc: "يرجى الانتظار بينما نقوم بمعالجة الصورة بشكل آمن.",
@@ -356,10 +356,10 @@ let currentLang = 'ar'; // Default to Arabic
 
 function setLanguage(lang) {
   currentLang = lang;
-  
+
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
-  
+
   document.querySelectorAll('[data-i18n]').forEach(element => {
     const key = element.getAttribute('data-i18n');
     if (translations[lang][key]) {
@@ -407,11 +407,14 @@ async function fetchAndStoreLocalData() {
   if (!userId || role !== 'parent') return null;
   const data = await apiFetch(`/api/parents/${userId}/data`);
   if (!data || data.error) return null;
-  
+
+  const parts = (data.children[0].notes || "").split(" | ");
+
   globalAuraData = {
     parentName: data.profile.fullName,
     email: data.profile.email,
     phone: data.profile.phone,
+    children: data.children || [],
     childProfile: data.children.length > 0 ? {
       id: data.children[0].id,
       name: data.children[0].fullName,
@@ -419,19 +422,37 @@ async function fetchAndStoreLocalData() {
       gender: data.children[0].gender,
       autismLevel: data.children[0].diagnosis,
       communicationStyle: 'متاح', // Mock for now or map from notes
-      behavioralHistory: data.children[0].notes,
-      emotionalTriggers: data.children[0].notes,
-      medicalNotes: data.children[0].notes,
-      therapyHistory: data.children[0].notes,
+      communicationStyle: parts[4] || "",
+      behavioralHistory: parts[1] || "",
+      emotionalTriggers: parts[2] || "",
+      medicalNotes: parts[0] || "",
+      therapyHistory: parts[3] || "",
       medications: 'None',
       allergies: 'None',
       emergencyContact: data.profile.phone,
-      doctor_id: data.appointments && data.appointments.length > 0 ? data.appointments[0].doctorId : null
-    } : { name: 'لم يتم تسجيل طفل' },
+      doctor_id: data.children[0].doctorId || null,
+      doctorName: data.children[0].doctorName || null
+    } : {
+      id: null,
+      name: 'لم يتم تسجيل طفل',
+      age: '--',
+      gender: '--',
+      autismLevel: '--',
+      communicationStyle: '--',
+      behavioralHistory: '--',
+      emotionalTriggers: '--',
+      medicalNotes: '--',
+      therapyHistory: '--',
+      medications: '--',
+      allergies: '--',
+      emergencyContact: '--',
+      doctor_id: null,
+      doctorName: 'Pending Assignment / قيد الإسناد'
+    },
     drawings: (data.analyses || []).map(d => ({
       id: d.id,
       name: d.title || 'تحليل',
-      imageUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
+      imageUrl: d.uploadedImage || "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
       status: d.status ? d.status.toLowerCase() : 'pending',
       uploadDate: d.createdAt,
       aiSummary: d.aiSummary || d.aiResult || '',
@@ -450,7 +471,7 @@ async function fetchAndStoreLocalData() {
       emotional: "مستقر",
       behavioral: "جيد",
       doctorComments: r.content || '',
-      imageUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
+      imageUrl: r.uploadedImage || "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
       status: r.status ? r.status.toLowerCase() : 'approved'
     })),
     appointments: data.appointments.map(a => ({
@@ -498,7 +519,7 @@ async function showView(viewId) {
   document.querySelectorAll('.view-section').forEach(view => {
     view.classList.remove('active');
   });
-  
+
   const targetView = document.getElementById(viewId);
   if (targetView) {
     targetView.classList.add('active');
@@ -522,28 +543,38 @@ async function renderViewContent(viewId) {
     await fetchAndStoreLocalData();
   }
   const data = getLocalData();
-  
+
   if (!data) return; // Wait until data is loaded
-  
-  
+
+
   // Render navbar fields dynamically to avoid hardcoded user names
   const navNameEl = document.getElementById('parent-navbar-name');
   const navAvatarEl = document.getElementById('parent-navbar-avatar');
-  if (navNameEl) navNameEl.textContent = data.parentName || "Sarah A.";
+  if (navNameEl) navNameEl.textContent = data.parentName || "";
   if (navAvatarEl) navAvatarEl.textContent = data.parentName ? data.parentName[0].toUpperCase() : "P";
 
   if (viewId === 'view-dashboard') {
     // Child Summary Card
-    document.getElementById('db-child-name').textContent = data.childProfile.name;
-    document.getElementById('db-child-age').textContent = `${data.childProfile.age} ${translations[currentLang]['db_years']}`;
-    document.getElementById('db-child-level').textContent = data.childProfile.autismLevel;
-    document.getElementById('db-child-doc').textContent = data.appointments[0]?.doctor || "Dr. Ahmed";
+    const firstChild = data.children && data.children.length > 0 ? data.children[0] : null;
+
+
+    document.getElementById('db-child-name').textContent =
+      firstChild ? firstChild.fullName : '--';
+
+    document.getElementById('db-child-age').textContent =
+      firstChild ? `${firstChild.age} ${translations[currentLang].db_years}` : '--';
+
+    document.getElementById('db-child-level').textContent =
+      firstChild ? firstChild.diagnosis : '--';
+
+    document.getElementById('db-child-doc').textContent =
+      firstChild ? (firstChild.doctorName || 'Pending Assignment') : '--';
 
     // Stats
     const totalReports = data.drawings.filter(d => d.status === 'approved').length;
     const upcomingCount = data.appointments.filter(a => a.status === 'scheduled').length;
     const unreadNotif = (data.notifications || []).filter(n => n.unread).length;
-    
+
     document.getElementById('stat-rep-count').textContent = totalReports;
     document.getElementById('stat-apt-count').textContent = upcomingCount;
     document.getElementById('stat-notif-count').textContent = unreadNotif;
@@ -672,9 +703,16 @@ function renderUploadHistory() {
         <div style="display: flex; gap: 16px; margin-bottom: 20px;">
           <img src="${d.imageUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);" alt="drawing">
           <div style="flex: 1; font-size: 0.9rem;">
-            <strong>AI Observation Draft:</strong>
-            <p style="margin-top: 4px; color: var(--color-text-muted);">${d.aiSummary}</p>
-          </div>
+      <div style="font-weight:700; font-size:1rem; margin-bottom:6px;">
+
+           حالة التحليل
+
+      </div>
+
+    <div style="color: var(--color-text-muted); line-height:1.6;">
+        تم رفع الرسمة بنجاح، وجارٍ تحليلها بواسطة الذكاء الاصطناعي...
+    </div>
+</div>
         </div>
 
         <!-- Progress workflow stepper -->
@@ -707,86 +745,95 @@ function renderUploadHistory() {
       </div>
     `;
   }).join('');
-  
+
   // Re-translate items
   setLanguage(currentLang);
 }
 
 // Drawing uploading logic simulator
 function handleDrawingUpload(e) {
+
   e.preventDefault();
   const fileInput = document.getElementById('drawing-file-field');
   const titleInput = document.getElementById('drawing-title-field');
-  
+
   if (!fileInput || fileInput.files.length === 0) {
-    alert("Please select a drawing to upload first / الرجاء تحديد الرسمة أولاً");
+    alert("الرجاء اختيار صورة أولاً");
     return;
   }
 
-  const title = titleInput.value.trim() || "Child Drawing / لوحة الطفل";
-  
-  const modal = document.getElementById('uploadModal');
-  const progressBar = document.getElementById('progressBar');
-  const modalTitle = document.getElementById('modalTitle');
-  
-  if (modal) {
-    modalTitle.setAttribute('data-i18n', 'modal_title');
-    modalTitle.textContent = translations[currentLang]['modal_title'];
-    modal.classList.add('active');
-    progressBar.style.width = '0%';
-    
-    // Simulate upload progress
-    setTimeout(() => {
-      progressBar.style.width = '100%';
-      
-      setTimeout(async () => {
-        modalTitle.setAttribute('data-i18n', 'modal_success');
-        modalTitle.textContent = translations[currentLang]['modal_success'];
-        
-        const data = getLocalData();
-        const childId = data.childProfile?.id;
-        const docSelect = document.getElementById('drawing-doctor-select');
-        const doctorId = docSelect ? docSelect.value : null;
-        
-        if (!doctorId) {
-            alert("Please select a doctor. / الرجاء اختيار الطبيب.");
-            modal.classList.remove('active');
-            return;
-        }
-        if (!childId) {
-            alert("Child profile required. / يتطلب وجود ملف للطفل.");
-            modal.classList.remove('active');
-            return;
-        }
+  const file = fileInput.files[0];
+  const title = titleInput.value.trim() || "Child Drawing";
 
-        try {
-            await fetch('/api/analyses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    childId: childId || 1, // fallback to avoid crash
-                    parentId: localStorage.getItem('auraUserId'),
-                    doctorId: doctorId,
-                    title: title || 'رسم تحليل جديد',
-                    aiResult: 'Analysis completed successfully',
-                    aiConfidence: '85%',
-                    aiSummary: 'الرسم يظهر تركيزاً كبيراً في التفاصيل الدقيقة مما قد يشير إلى مستوى عالٍ من التركيز. الألوان المستخدمة دافئة وتميل للإيجابية.'
-                })
-            });
-            await fetchAndStoreLocalData();
-        } catch (err) {
-            console.error("Failed to upload drawing activity", err);
-        }
-        
-        renderUploadHistory();
-        setTimeout(() => {
-          modal.classList.remove('active');
-          fileInput.value = '';
-          titleInput.value = '';
-          showView('view-upload');
-        }, 1500);
-      }, 800);
-    }, 100);
+  const data = getLocalData();
+  const childId = data?.childProfile?.id;
+
+  if (!childId) {
+    alert("لم يتم العثور على ملف الطفل.");
+    return;
+  }
+
+  const docSelect = document.getElementById('drawing-doctor-select');
+  const doctorId = (docSelect && docSelect.value) ? docSelect.value : null;
+
+  const reader = new FileReader();
+
+  reader.onload = async function () {
+    const base64Image = reader.result;
+    console.log("📤 Sending request to /api/analyses");
+
+    try {
+      const response = await fetch('/api/analyses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          childId,
+          parentId: localStorage.getItem('auraUserId'),
+          doctorId,
+          title,
+          uploadedFileName: file.name,
+          uploadedImage: base64Image,
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Server Error:", error);
+        alert(error);
+        return;
+      }
+
+      await fetchAndStoreLocalData();
+
+      renderUploadHistory();
+
+      alert("تم رفع الرسمة بنجاح، وجارٍ تحليلها...");
+      fileInput.value = "";
+      titleInput.value = "";
+      const text = document.querySelector(".upload-area span");
+      if (text) {
+        text.textContent = "اختيار ملف";
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء رفع الرسمة.");
+    }
+  };
+
+  reader.readAsDataURL(file);
+}
+function previewSelectedDrawing(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const fileText = document.querySelector(".upload-area span");
+
+  if (fileText) {
+    fileText.textContent = file.name;
   }
 }
 
@@ -882,7 +929,7 @@ function loadReportDetails(reportId) {
       </div>
     </div>
   `;
-  
+
   setLanguage(currentLang);
 }
 
@@ -941,7 +988,7 @@ function renderAppointmentsPage() {
       </tbody>
     </table>
   `;
-  
+
   setLanguage(currentLang);
 }
 
@@ -960,90 +1007,89 @@ async function handleBookAppointment(e) {
   const data = getLocalData();
   const userId = getUserId();
   const childId = data.childProfile?.id;
-  const docSelect = document.getElementById('apt-doctor-select');
-  const doctorId = docSelect ? docSelect.value : null;
+  const doctorId = data.childProfile?.doctor_id;
 
   if (!childId || !doctorId) {
-      alert("No child profile or assigned doctor found to book appointment. / لا يوجد ملف طفل أو طبيب مخصص للحجز.");
-      return;
+    alert("No child profile or assigned doctor found to book appointment. / لا يوجد ملف طفل أو طبيب مخصص للحجز.");
+    return;
   }
 
   try {
-      const res = await fetch('/api/appointments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              childId,
-              parentId: userId,
-              doctorId,
-              date: dateInput.value,
-              time: timeInput.value,
-              status: "Scheduled",
-              notes: typeInput.value
-          })
-      });
-      const result = await res.json();
-      
-      if (result.success) {
-          // Notification
-          await fetch('/api/notifications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  userId,
-                  text: `Appointment booked for ${dateInput.value} at ${timeInput.value}.`
-              })
-          });
+    const res = await fetch('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        childId,
+        parentId: userId,
+        doctorId,
+        date: dateInput.value,
+        time: timeInput.value,
+        status: "Scheduled",
+        notes: typeInput.value
+      })
+    });
+    const result = await res.json();
 
-          await fetchAndStoreLocalData();
-          updateSidebarBadgeCount();
-          renderViewContent('view-appointments');
-          
-          // Reset form
-          dateInput.value = '';
-          timeInput.value = '';
-          typeInput.value = '';
-          
-          alert("Appointment scheduled successfully! / تم حجز الموعد بنجاح");
-      } else {
-          alert("Error scheduling appointment.");
-      }
+    if (result.success) {
+      // Notification
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          text: `Appointment booked for ${dateInput.value} at ${timeInput.value}.`
+        })
+      });
+
+      await fetchAndStoreLocalData();
+      updateSidebarBadgeCount();
+      renderViewContent('view-appointments');
+
+      // Reset form
+      dateInput.value = '';
+      timeInput.value = '';
+      typeInput.value = '';
+
+      alert("Appointment scheduled successfully! / تم حجز الموعد بنجاح");
+    } else {
+      alert("Error scheduling appointment.");
+    }
   } catch (err) {
-      console.error(err);
-      alert("Failed to schedule appointment.");
+    console.error(err);
+    alert("Failed to schedule appointment.");
   }
 }
 
 function cancelAppointment(id) {
-    cancelAppointmentAsync(id);
+  cancelAppointmentAsync(id);
 }
 
 async function cancelAppointmentAsync(id) {
   if (confirm("Are you sure you want to cancel this appointment? / هل أنت متأكد من إلغاء الموعد؟")) {
     try {
-        const res = await fetch(`/api/appointments/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: "Cancelled", notes: "Cancelled by Parent" })
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "Cancelled", notes: "Cancelled by Parent" })
+      });
+      const result = await res.json();
+      if (result.success) {
+        // Notification
+        const userId = getUserId();
+        await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, text: `Appointment cancelled.` })
         });
-        const result = await res.json();
-        if (result.success) {
-            // Notification
-            const userId = getUserId();
-            await fetch('/api/notifications', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, text: `Appointment cancelled.` })
-            });
 
-            await fetchAndStoreLocalData();
-            updateSidebarBadgeCount();
-            renderViewContent('view-appointments');
-        } else {
-            alert("Error cancelling appointment.");
-        }
+        await fetchAndStoreLocalData();
+        updateSidebarBadgeCount();
+        renderViewContent('view-appointments');
+      } else {
+        alert("Error cancelling appointment.");
+      }
     } catch (err) {
-        console.error(err);
+      console.error(err);
     }
   }
 }
@@ -1053,29 +1099,29 @@ async function rescheduleAppointment(id) {
   const newTime = prompt("Enter new time (e.g. 10:00 AM) / أدخل الوقت الجديد:");
   if (newDate && newTime) {
     try {
-        const res = await fetch(`/api/appointments/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: "Scheduled", notes: `Rescheduled to ${newDate} at ${newTime}` })
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "Scheduled", notes: `Rescheduled to ${newDate} at ${newTime}` })
+      });
+      const result = await res.json();
+      if (result.success) {
+        // Notification
+        const userId = getUserId();
+        await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, text: `Rescheduled appointment to ${newDate} at ${newTime}.` })
         });
-        const result = await res.json();
-        if (result.success) {
-            // Notification
-            const userId = getUserId();
-            await fetch('/api/notifications', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, text: `Rescheduled appointment to ${newDate} at ${newTime}.` })
-            });
 
-            await fetchAndStoreLocalData();
-            updateSidebarBadgeCount();
-            renderViewContent('view-appointments');
-        } else {
-            alert("Error rescheduling appointment.");
-        }
+        await fetchAndStoreLocalData();
+        updateSidebarBadgeCount();
+        renderViewContent('view-appointments');
+      } else {
+        alert("Error rescheduling appointment.");
+      }
     } catch (err) {
-        console.error(err);
+      console.error(err);
     }
   }
 }
@@ -1087,16 +1133,33 @@ async function renderChatMessages() {
   if (!chatMessagesEl) return;
   chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل الرسائل...</div>';
 
+  const data = getLocalData();
+  const doctorName = data.childProfile?.doctorName || "Pending Assignment / قيد الإسناد";
+  const doctorId = data.childProfile?.doctor_id;
+
+  const displayEl = document.getElementById('chat-doctor-display-name');
+  if (displayEl) {
+    displayEl.textContent = doctorName;
+  }
+
+  if (!doctorId) {
+    chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لم يتم إسناد طبيب للطفل بعد. / No doctor assigned yet.</div>';
+    return;
+  }
+
+  window.activeConversationDoctorId = doctorId;
+
   try {
     let res = await fetch(`/api/users/${userId}/conversations`);
     let conversations = await res.json();
     console.log("Conversations fetched:", conversations);
-    const conv = conversations[0]; 
+
+    const conv = conversations.find(c => c.otherParticipantId == doctorId);
     if (!conv) {
-        chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لا توجد محادثات حتى الآن</div>';
-        return;
+      chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">أرسل رسالة للبدء في المحادثة مع طبيبك المتابع.</div>';
+      return;
     }
-    window.activeConversationDoctorId = conv.otherParticipantId;
+
     res = await fetch(`/api/conversations/${conv.id}/messages`);
     const msgs = await res.json();
     console.log("Messages fetched:", msgs);
@@ -1105,7 +1168,7 @@ async function renderChatMessages() {
         <p style="margin: 0; color: inherit;">${msg.message}</p>
       </div>
     `).join('');
-    
+
     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
   } catch (err) {
     console.error("Failed to load chat:", err);
@@ -1122,48 +1185,48 @@ async function sendChatMessage(e) {
   const chatSelect = document.getElementById('chat-doctor-select');
   let docId = chatSelect && chatSelect.value ? chatSelect.value : window.activeConversationDoctorId;
   if (!docId) {
-      alert('لا يوجد طبيب مخصص للطفل بعد. / No doctor assigned yet.');
-      return;
+    alert('لا يوجد طبيب مخصص للطفل بعد. / No doctor assigned yet.');
+    return;
   }
 
   const text = textInput.value.trim();
   textInput.value = '';
-  
+
   try {
-      const res = await fetch('/api/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              senderId: userId,
-              receiverId: docId,
-              message: text
-          })
-      });
-      const result = await res.json();
-      console.log("Insert message result:", result);
-      if (result.success) {
-          await renderChatMessages();
-      }
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        senderId: userId,
+        receiverId: docId,
+        message: text
+      })
+    });
+    const result = await res.json();
+    console.log("Insert message result:", result);
+    if (result.success) {
+      await renderChatMessages();
+    }
   } catch (err) {
-      console.error("Failed to send message:", err);
+    console.error("Failed to send message:", err);
   }
 }
 
 function sendVoiceNoteMock() {
-    alert('Voice notes are disabled during real-time backend testing.');
+  alert('Voice notes are disabled during real-time backend testing.');
 }
 
 function triggerAttachmentMock(fileName) {
-    alert('Attachments are disabled during real-time backend testing.');
+  alert('Attachments are disabled during real-time backend testing.');
 }
 
 // WhatsApp Communities Style - Community view helpers
 function renderCommunityPosts() {
   const data = getLocalData();
-  
+
   const groupsListContainer = document.getElementById('community-groups-list');
   const groupDetailContainer = document.getElementById('community-group-detail');
-  
+
   if (!groupsListContainer || !groupDetailContainer) return;
 
   const groups = getCommunityGroups();
@@ -1173,15 +1236,15 @@ function renderCommunityPosts() {
     // Show Groups list and hide active group posts view
     groupsListContainer.style.display = 'block';
     groupDetailContainer.style.display = 'none';
-    
+
     const gridEl = document.getElementById('community-groups-grid');
     if (gridEl) {
       gridEl.innerHTML = groups.map(grp => {
         const name = currentLang === 'ar' ? grp.nameAr : grp.nameEn;
         const desc = currentLang === 'ar' ? grp.descAr : grp.descEn;
         const moderatorsStr = grp.moderators.join(', ');
-        const unreadIndicator = grp.unread > 0 
-          ? `<span class="nav-badge" style="background: var(--color-accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${grp.unread} new</span>` 
+        const unreadIndicator = grp.unread > 0
+          ? `<span class="nav-badge" style="background: var(--color-accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${grp.unread} new</span>`
           : '';
 
         return `
@@ -1253,7 +1316,7 @@ function renderCommunityPosts() {
 // Enter sub group view
 function enterCommunityGroup(groupId) {
   activeGroupId = groupId;
-  
+
   // Clear unread count for this group in local storage
   const groups = getCommunityGroups();
   const grpIndex = groups.findIndex(g => g.id === groupId);
@@ -1261,7 +1324,7 @@ function enterCommunityGroup(groupId) {
     groups[grpIndex].unread = 0;
     saveCommunityGroups(groups);
   }
-  
+
   renderCommunityPosts();
 }
 
@@ -1269,11 +1332,11 @@ function enterCommunityGroup(groupId) {
 function exitCommunityGroup() {
   activeGroupId = null;
   postAttachedFile = null;
-  
+
   // Clear mock file attachment span
   const span = document.getElementById('post-file-attached-label');
   if (span) span.textContent = '';
-  
+
   const searchField = document.getElementById('group-post-search');
   if (searchField) searchField.value = '';
 
@@ -1312,7 +1375,7 @@ function renderGroupPostsList() {
   const posts = getCommunityPosts();
 
   // Filter posts matching activeGroupId and search text
-  const groupPosts = posts.filter(p => p.groupId === activeGroupId && 
+  const groupPosts = posts.filter(p => p.groupId === activeGroupId &&
     (searchVal === '' || p.text.toLowerCase().includes(searchVal) || p.author.toLowerCase().includes(searchVal))
   );
 
@@ -1387,7 +1450,7 @@ function handleCreatePostInGroup(e) {
   };
   posts.unshift(newPost);
   saveCommunityPosts(posts);
-  
+
   // Bump member count slightly to simulate active interaction
   const groups = getCommunityGroups();
   const grpIndex = groups.findIndex(g => g.id === activeGroupId);
@@ -1430,10 +1493,10 @@ function handlePostComment(e, postId) {
     });
     saveCommunityPosts(posts);
     input.value = '';
-    
+
     // Re-render
     renderGroupPostsList();
-    
+
     // Keep comments block visible
     const el = document.getElementById(`comments-${postId}`);
     if (el) el.style.display = 'block';
@@ -1488,7 +1551,7 @@ function renderEducationalResources() {
       </div>
     </div>
   `).join('');
-  
+
   if (filtered.length === 0) {
     container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-text-muted); padding: 40px;">No matches found for the selected filters.</p>`;
   }
@@ -1526,45 +1589,47 @@ function renderNotificationsPage() {
 async function markAllNotificationsRead() {
   const userId = getUserId();
   try {
-      const res = await fetch('/api/notifications/read', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-      });
-      if ((await res.json()).success) {
-          await fetchAndStoreLocalData();
-          updateSidebarBadgeCount();
-          renderNotificationsPage();
-          alert("All notifications marked as read. / تم تحديد الكل كمقروء");
-      }
+    const res = await fetch('/api/notifications/read', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    if ((await res.json()).success) {
+      await fetchAndStoreLocalData();
+      updateSidebarBadgeCount();
+      renderNotificationsPage();
+      alert("All notifications marked as read. / تم تحديد الكل كمقروء");
+    }
   } catch (err) {
-      console.error(err);
+    console.error(err);
   }
 }
 
 async function clearAllNotifications() {
   const userId = getUserId();
   try {
-      const res = await fetch('/api/notifications', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-      });
-      if ((await res.json()).success) {
-          await fetchAndStoreLocalData();
-          updateSidebarBadgeCount();
-          renderNotificationsPage();
-      }
+    const res = await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    if ((await res.json()).success) {
+      await fetchAndStoreLocalData();
+      updateSidebarBadgeCount();
+      renderNotificationsPage();
+    }
   } catch (err) {
-      console.error(err);
+    console.error(err);
   }
 }
 
 // Update badges on sidebar nav
 function updateSidebarBadgeCount() {
   const data = getLocalData();
+
+  if (!data) return;
   const unreadNotif = (data.notifications || []).filter(n => n.unread).length;
-  
+
   const badgeEl = document.getElementById('sidebar-notif-badge');
   if (badgeEl) {
     if (unreadNotif > 0) {
@@ -1587,10 +1652,10 @@ function updateSidebarBadgeCount() {
 async function handleProfileUpdate(e) {
   e.preventDefault();
   const data = getLocalData();
-  
+
   if (!data || !data.childProfile || !data.childProfile.id) {
-      alert("No child profile found to update. / لم يتم العثور على ملف للطفل لتحديثه.");
-      return;
+    alert("No child profile found to update. / لم يتم العثور على ملف للطفل لتحديثه.");
+    return;
   }
 
   const childId = data.childProfile.id;
@@ -1598,7 +1663,7 @@ async function handleProfileUpdate(e) {
   const age = parseInt(document.getElementById('prof-age-input').value) || 0;
   const gender = document.getElementById('prof-gender-input').value;
   const autismLevel = document.getElementById('prof-level-input').value;
-  
+
   // Combine notes and other fields into a single notes field as per schema
   const communicationStyle = document.getElementById('prof-com-input').value;
   const behavioralHistory = document.getElementById('prof-history-input').value;
@@ -1607,73 +1672,73 @@ async function handleProfileUpdate(e) {
   const therapyHistory = document.getElementById('prof-therapy-input').value;
   const medications = document.getElementById('prof-med-input').value;
   const allergies = document.getElementById('prof-allergies-input').value;
-  
+
   const notes = JSON.stringify({
-      communicationStyle, behavioralHistory, emotionalTriggers,
-      medicalNotes, therapyHistory, medications, allergies
+    communicationStyle, behavioralHistory, emotionalTriggers,
+    medicalNotes, therapyHistory, medications, allergies
   });
 
   try {
-      const res = await fetch(`/api/children/${childId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fullName, age, gender, diagnosis: autismLevel, notes })
+    const res = await fetch(`/api/children/${childId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, age, gender, diagnosis: autismLevel, notes })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      // Add notification log
+      const userId = getUserId();
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, text: "Child medical and behavioral profile updated successfully." })
       });
-      const result = await res.json();
-      
-      if (result.success) {
-          // Add notification log
-          const userId = getUserId();
-          await fetch('/api/notifications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId, text: "Child medical and behavioral profile updated successfully." })
-          });
-          
-          await fetchAndStoreLocalData();
-          updateSidebarBadgeCount();
-          alert("Child profile saved successfully! / تم حفظ ملف الطفل بنجاح");
-          showView('view-dashboard');
-      } else {
-          alert("Error saving child profile. / حدث خطأ أثناء حفظ ملف الطفل.");
-      }
+
+      await fetchAndStoreLocalData();
+      updateSidebarBadgeCount();
+      alert("Child profile saved successfully! / تم حفظ ملف الطفل بنجاح");
+      showView('view-dashboard');
+    } else {
+      alert("Error saving child profile. / حدث خطأ أثناء حفظ ملف الطفل.");
+    }
   } catch (err) {
-      console.error(err);
-      alert("Failed to save child profile.");
+    console.error(err);
+    alert("Failed to save child profile.");
   }
 }
 
 // Settings changes saving
 async function handleSettingsUpdate(e, type) {
   e.preventDefault();
-  
-  if (type === 'profile') {
-      const userId = getUserId();
-      const fullName = e.target.querySelector('input[type="text"]').value;
-      const email = e.target.querySelector('input[type="email"]').value;
-      const phone = e.target.querySelector('input[type="tel"]').value;
 
-      try {
-          const res = await fetch(`/api/users/${userId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fullName, email, phone })
-          });
-          const result = await res.json();
-          if (result.success) {
-              await fetchAndStoreLocalData();
-              const navNameEl = document.getElementById('parent-navbar-name');
-              if (navNameEl) navNameEl.textContent = fullName;
-              alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
-          } else {
-              alert("Error updating settings.");
-          }
-      } catch (err) {
-          console.error(err);
-          alert("Failed to update settings.");
+  if (type === 'profile') {
+    const userId = getUserId();
+    const fullName = e.target.querySelector('input[type="text"]').value;
+    const email = e.target.querySelector('input[type="email"]').value;
+    const phone = e.target.querySelector('input[type="tel"]').value;
+
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, phone })
+      });
+      const result = await res.json();
+      if (result.success) {
+        await fetchAndStoreLocalData();
+        const navNameEl = document.getElementById('parent-navbar-name');
+        if (navNameEl) navNameEl.textContent = fullName;
+        alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
+      } else {
+        alert("Error updating settings.");
       }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update settings.");
+    }
   } else {
-      alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
+    alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
   }
 }
 
@@ -1703,13 +1768,13 @@ function openUploadModal() {
   const modal = document.getElementById('uploadModal');
   const progressBar = document.getElementById('progressBar');
   const modalTitle = document.getElementById('modalTitle');
-  
+
   if (modal) {
     modalTitle.setAttribute('data-i18n', 'modal_title');
     modalTitle.textContent = translations[currentLang]['modal_title'];
     modal.classList.add('active');
     progressBar.style.width = '0%';
-    
+
     setTimeout(() => {
       progressBar.style.width = '100%';
       setTimeout(() => {
@@ -1724,57 +1789,59 @@ function openUploadModal() {
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setLanguage(currentLang);
-  
+
   const langBtn = document.getElementById('langToggle');
   if (langBtn) {
     langBtn.addEventListener('click', toggleLanguage);
   }
-  
+
   const uploadBtn = document.getElementById('uploadAction');
   if (uploadBtn) {
     uploadBtn.addEventListener('click', openUploadModal);
   }
 
-  // Update badges
+  // انتظر تحميل البيانات أولاً
+  await fetchAndStoreLocalData();
+
+  // ثم حدث الصفحة
   updateSidebarBadgeCount();
 
-  // If we are in parent.html page, render the active SPA view (default: view-dashboard)
   if (document.getElementById('view-dashboard')) {
     showView('view-dashboard');
   }
 });
 
 
-window.loadChatWithDoctor = async function(doctorId) {
-    window.activeConversationDoctorId = doctorId;
-    const userId = getUserId();
-    const chatMessagesEl = document.getElementById('chat-history-container');
-    if (!chatMessagesEl) return;
-    
-    chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل المحادثة...</div>';
-    
-    try {
-        let res = await fetch(`/api/users/${userId}/conversations`);
-        let conversations = await res.json();
-        let conv = conversations.find(c => c.otherParticipantId == doctorId);
-        
-        if (!conv) {
-            chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لا توجد محادثات سابقة مع هذا الطبيب. أرسل رسالة للبدء.</div>';
-            return;
-        }
-        
-        res = await fetch(`/api/conversations/${conv.id}/messages`);
-        const msgs = await res.json();
-        chatMessagesEl.innerHTML = msgs.map(msg => `
+window.loadChatWithDoctor = async function (doctorId) {
+  window.activeConversationDoctorId = doctorId;
+  const userId = getUserId();
+  const chatMessagesEl = document.getElementById('chat-history-container');
+  if (!chatMessagesEl) return;
+
+  chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل المحادثة...</div>';
+
+  try {
+    let res = await fetch(`/api/users/${userId}/conversations`);
+    let conversations = await res.json();
+    let conv = conversations.find(c => c.otherParticipantId == doctorId);
+
+    if (!conv) {
+      chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لا توجد محادثات سابقة مع هذا الطبيب. أرسل رسالة للبدء.</div>';
+      return;
+    }
+
+    res = await fetch(`/api/conversations/${conv.id}/messages`);
+    const msgs = await res.json();
+    chatMessagesEl.innerHTML = msgs.map(msg => `
           <div class="chat-bubble ${msg.senderId == userId ? 'sent' : 'received'}">
             <p style="margin: 0; color: inherit;">${msg.message}</p>
           </div>
         `).join('');
-        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-    } catch (e) {
-        console.error(e);
-        chatMessagesEl.innerHTML = '<div style="text-align: center; color: red; padding: 20px;">حدث خطأ أثناء تحميل المحادثة.</div>';
-    }
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  } catch (e) {
+    console.error(e);
+    chatMessagesEl.innerHTML = '<div style="text-align: center; color: red; padding: 20px;">حدث خطأ أثناء تحميل المحادثة.</div>';
+  }
 }
