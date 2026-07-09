@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS doctors (
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Links parents/children to doctors explicitly
 CREATE TABLE IF NOT EXISTS patient_assignments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     doctorId INTEGER NOT NULL,
@@ -63,7 +62,6 @@ CREATE TABLE IF NOT EXISTS appointments (
     FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- AI Analyses Requested by Parents
 CREATE TABLE IF NOT EXISTS analyses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     childId INTEGER NOT NULL,
@@ -120,6 +118,10 @@ CREATE TABLE IF NOT EXISTS messages (
     senderId INTEGER NOT NULL,
     receiverId INTEGER NOT NULL,
     message TEXT NOT NULL,
+    attachmentData TEXT,
+    attachmentType TEXT,
+    attachmentName TEXT,
+    isRead INTEGER DEFAULT 0,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (conversationId) REFERENCES conversations(id) ON DELETE CASCADE,
     FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
@@ -167,4 +169,28 @@ CREATE TABLE IF NOT EXISTS educational_content (
     title TEXT, category TEXT, language TEXT, author TEXT,
     contentType TEXT, description TEXT, link TEXT, status TEXT DEFAULT 'مسودة',
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS community_groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nameEn TEXT NOT NULL,
+    nameAr TEXT NOT NULL,
+    descEn TEXT,
+    descAr TEXT,
+    members INTEGER DEFAULT 0,
+    pinned INTEGER DEFAULT 0,
+    unread INTEGER DEFAULT 0,
+    moderators TEXT DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS community_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    groupId INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    anonymous INTEGER DEFAULT 0,
+    attachmentName TEXT,
+    attachmentType TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (groupId) REFERENCES community_groups(id) ON DELETE CASCADE
 );

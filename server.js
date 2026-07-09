@@ -69,6 +69,16 @@ async function initDB() {
     // Initialize schema
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.exec(schema);
+        try {
+    await db.exec(`ALTER TABLE analyses ADD COLUMN uploadedImage TEXT`);
+} catch (e) {
+    // العمود موجود مسبقًا
+}
+
+    try { await db.exec(`ALTER TABLE messages ADD COLUMN attachmentData TEXT`); } catch (e) {}
+    try { await db.exec(`ALTER TABLE messages ADD COLUMN attachmentType TEXT`); } catch (e) {}
+    try { await db.exec(`ALTER TABLE messages ADD COLUMN attachmentName TEXT`); } catch (e) {}
+
 
     console.log('Database initialized.');
 }
@@ -354,19 +364,18 @@ app.get('/api/children/:id', async (req, res) => {
         }
 
         // Fetch treatmentHistory from appointments
-        const appointments = await db.all(`
-            SELECT date, type, notes
-            FROM appointments
-            WHERE childId = ?
-            ORDER BY date DESC
-        `, [childId]);
+       const appointments = await db.all(`
+    SELECT date, time, status, notes
+    FROM appointments
+    WHERE childId = ?
+    ORDER BY date DESC
+`, [childId]);
 
-        const treatmentHistory = appointments.map(a => ({
-            date: a.date,
-            type: a.type,
-            notes: a.notes || 'لا توجد ملاحظات'
-        }));
-
+const treatmentHistory = appointments.map(a => ({
+    date: a.date,
+    type: a.status || 'موعد',
+    notes: a.notes || `موعد الساعة ${a.time || 'غير محددة'}`
+}));
         // Fetch aiReports from analyses
         const analyses = await db.all(`
             SELECT createdAt as date, aiSummary as result
@@ -518,30 +527,53 @@ app.post('/api/appointments', async (req, res) => {
     try {
         const { childId, parentId, date, time, status, notes } = req.body;
 
+        if (!childId || !parentId || !date || !time) {
+            return res.status(400).json({
+                success: false,
+                message: 'الرجاء إدخال بيانات الموعد كاملة'
+            });
+        }
 
+        const doctorId = await getAssignedDoctorId(childId);
+
+        if (!doctorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'لا يوجد طبيب مخصص لهذا الطفل حالياً'
+            });
+        }
 
         const result = await db.run(
-            'INSERT INTO appointments (childId, parentId, doctorId, date, time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [childId, parentId, doctorId, date, time, status || 'Pending', notes]
+            `INSERT INTO appointments 
+            (childId, parentId, doctorId, date, time, status, notes) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                childId,
+                parentId,
+                doctorId,
+                date,
+                time,
+                status || 'Pending',
+                notes || ''
+            ]
         );
-        // Link doctor and patient
-        await db.run(`
-INSERT INTO analyses (
-childId,
-parentId,
-doctorId,
-imagePath,
-status
-)
-VALUES (?, ?, NULL, ?, 'Pending Assignment')
-`, [
-            childId,
-            parentId,
-            imagePath
-        ]);
-        res.json({ success: true, appointmentId: result.lastID });
+
+        await db.run(
+            'INSERT INTO notifications (userId, text) VALUES (?, ?)',
+            [doctorId, 'تم طلب موعد جديد من ولي الأمر']
+        );
+
+        res.json({
+            success: true,
+            appointmentId: result.lastID
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error creating appointment:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
 
@@ -567,8 +599,33 @@ app.put('/api/appointments/:id', async (req, res) => {
 // ANALYSES API
 // ----------------------------------------------------
 app.get('/api/analyses', async (req, res) => {
-    const analyses = await db.all('SELECT * FROM analyses ORDER BY createdAt DESC');
-    res.json(analyses);
+    try {
+        const analyses = await db.all(`
+            SELECT
+                a.*,
+                c.fullName AS childName,
+                p.fullName AS parentName,
+                d.fullName AS doctorName
+            FROM analyses a
+            LEFT JOIN children c ON a.childId = c.id
+            LEFT JOIN users p ON a.parentId = p.id
+            LEFT JOIN users d ON a.doctorId = d.id
+            ORDER BY a.createdAt DESC
+        `);
+
+        res.json({
+            success: true,
+            analyses
+        });
+
+    } catch (err) {
+        console.error('Error loading analyses:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message,
+            analyses: []
+        });
+    }
 });
 
 app.post('/api/analyses', async (req, res) => {
@@ -600,22 +657,23 @@ app.post('/api/analyses', async (req, res) => {
         const status = doctorId ? 'pending' : 'waiting_assignment';
 
         const result = await db.run(
-            `INSERT INTO analyses
+    `INSERT INTO analyses
 (childId,parentId,doctorId,title,uploadedFileName,uploadedImage,aiResult,aiConfidence,aiSummary,status)
 VALUES (?,?,?,?,?,?,?,?,?,?)`,
-            [
-                childId,
-                parentId,
-                doctorId,
-                title,
-                uploadedFileName,
-                uploadedImage,
-                analysis.emotions,
-                analysis.confidence,
-                analysis.summary,
-                status
-            ]
-        );
+    [
+        
+    childId,
+    parentId,
+    doctorId,
+    title,
+    uploadedFileName,
+    uploadedImage,
+    analysis.emotions,
+    analysis.confidence,
+    analysis.summary,
+    status
+    ]
+);
         // Link doctor and patient
         await db.run('INSERT OR IGNORE INTO patient_assignments (doctorId, childId, parentId) VALUES (?, ?, ?)', [doctorId, childId, parentId]);
 
@@ -632,7 +690,17 @@ VALUES (?,?,?,?,?,?,?,?,?,?)`,
 
         res.json({ success: true, analysisId: result.lastID });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        if (err.message && err.message.includes('429')) {
+    return res.status(429).json({
+        success: false,
+        error: 'تم تجاوز الحد المجاني لتحليل Gemini. الرجاء المحاولة بعد فترة قصيرة.'
+    });
+}
+
+res.status(500).json({
+    success: false,
+    error: 'حدث خطأ أثناء تحليل الرسمة. الرجاء المحاولة لاحقًا.'
+});
     }
 });
 
@@ -786,9 +854,12 @@ app.post('/api/messages', async (req, res) => {
     try {
         const senderId = req.body.senderId || req.body.sender_id;
         const receiverId = req.body.receiverId || req.body.receiver_id;
-        const messageText = req.body.message || req.body.text;
+        const messageText = req.body.message || req.body.text || "";
+        const attachmentData = req.body.attachmentData || null;
+        const attachmentType = req.body.attachmentType || null;
+        const attachmentName = req.body.attachmentName || null;
 
-        if (!senderId || !receiverId || !messageText) {
+        if (!senderId || !receiverId || (!messageText && !attachmentData)) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -806,8 +877,8 @@ app.post('/api/messages', async (req, res) => {
         }
 
         const result = await db.run(
-            'INSERT INTO messages (conversationId, senderId, receiverId, message) VALUES (?, ?, ?, ?)',
-            [conv.id, senderId, receiverId, messageText]
+            'INSERT INTO messages (conversationId, senderId, receiverId, message, attachmentData, attachmentType, attachmentName) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [conv.id, senderId, receiverId, messageText, attachmentData, attachmentType, attachmentName]
         );
 
         // Notify
@@ -903,13 +974,12 @@ app.get('/api/parents/:id/data', async (req, res) => {
         const appointments = await db.all('SELECT a.*, u.fullName as doctorName FROM appointments a JOIN users u ON a.doctorId = u.id WHERE a.parentId = ? ORDER BY a.date DESC', [parentId]);
         const notifications = await db.all('SELECT * FROM notifications WHERE userId = ? ORDER BY id DESC', [parentId]);
         const reports = await db.all(`
-            SELECT r.*, c.fullName as childName, a.uploadedImage 
-            FROM reports r 
-            JOIN children c ON r.childId = c.id 
-            LEFT JOIN analyses a ON r.analysisId = a.id
-            WHERE r.parentId = ? AND r.status = "sent" 
-            ORDER BY r.createdAt DESC
-        `, [parentId]);
+        SELECT r.*, c.fullName as childName
+        FROM reports r 
+        JOIN children c ON r.childId = c.id 
+        WHERE r.parentId = ? AND r.status = "sent" 
+        ORDER BY r.createdAt DESC
+`       , [parentId]);
         const analyses = await db.all('SELECT a.*, c.fullName as childName FROM analyses a JOIN children c ON a.childId = c.id WHERE a.parentId = ? ORDER BY a.createdAt DESC', [parentId]);
 
         res.json({
@@ -921,8 +991,12 @@ app.get('/api/parents/:id/data', async (req, res) => {
             reports,
             analyses
         });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+     } catch (err) {
+        console.error('❌ Error in /api/parents/:id/data:', err);
+        res.status(500).json({ 
+            success: false,
+            error: err.message 
+        });
     }
 });
 
@@ -1110,6 +1184,65 @@ app.get('/api/admin/pending-assignments', async (req, res) => {
             success: false,
             error: err.message
         });
+    }
+});
+
+// ----------------------------------------------------
+// COMMUNITY API
+// ----------------------------------------------------
+app.get('/api/community/groups', async (req, res) => {
+    try {
+        const groups = await db.all('SELECT * FROM community_groups');
+        // Parse JSON for moderators
+        const parsedGroups = groups.map(g => ({
+            ...g,
+            moderators: g.moderators ? JSON.parse(g.moderators) : []
+        }));
+        res.json(parsedGroups);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/community/posts', async (req, res) => {
+    try {
+        const { groupId } = req.query;
+        let query = 'SELECT * FROM community_posts';
+        let params = [];
+        if (groupId) {
+            query += ' WHERE groupId = ?';
+            params.push(groupId);
+        }
+        query += ' ORDER BY createdAt DESC';
+        const posts = await db.all(query, params);
+        
+        // Map back to expected structure
+        const formatted = posts.map(p => ({
+            id: 'p-' + p.id,
+            groupId: p.groupId.toString(),
+            author: p.author,
+            anonymous: p.anonymous === 1,
+            text: p.text,
+            date: p.createdAt,
+            attachment: p.attachmentName ? { name: p.attachmentName, type: p.attachmentType } : null,
+            comments: [] 
+        }));
+        res.json(formatted);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/community/posts', async (req, res) => {
+    try {
+        const { groupId, author, text, anonymous, attachment } = req.body;
+        const result = await db.run(
+            'INSERT INTO community_posts (groupId, author, text, anonymous, attachmentName, attachmentType) VALUES (?, ?, ?, ?, ?, ?)',
+            [groupId, author, text, anonymous ? 1 : 0, attachment?.name || null, attachment?.type || null]
+        );
+        res.json({ success: true, postId: result.lastID });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

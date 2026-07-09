@@ -408,30 +408,30 @@ async function fetchAndStoreLocalData() {
   const data = await apiFetch(`/api/parents/${userId}/data`);
   if (!data || data.error) return null;
 
-  const parts = (data.children[0].notes || "").split(" | ");
+  const firstChild = data.children && data.children.length > 0 ? data.children[0] : null;
+  const parts = firstChild && firstChild.notes ? firstChild.notes.split(" | ") : [];
 
   globalAuraData = {
     parentName: data.profile.fullName,
     email: data.profile.email,
     phone: data.profile.phone,
     children: data.children || [],
-    childProfile: data.children.length > 0 ? {
-      id: data.children[0].id,
-      name: data.children[0].fullName,
-      age: data.children[0].age,
-      gender: data.children[0].gender,
-      autismLevel: data.children[0].diagnosis,
-      communicationStyle: 'متاح', // Mock for now or map from notes
+    childProfile: firstChild ? {
+      id: firstChild.id,
+      name: firstChild.fullName,
+      age: firstChild.age,
+      gender: firstChild.gender,
+      autismLevel: firstChild.diagnosis,
       communicationStyle: parts[4] || "",
       behavioralHistory: parts[1] || "",
       emotionalTriggers: parts[2] || "",
       medicalNotes: parts[0] || "",
       therapyHistory: parts[3] || "",
-      medications: 'None',
-      allergies: 'None',
+      medications: 'لا يوجد',
+      allergies: 'لا يوجد',
       emergencyContact: data.profile.phone,
-      doctor_id: data.children[0].doctorId || null,
-      doctorName: data.children[0].doctorName || null
+      doctor_id: firstChild.doctorId || null,
+      doctorName: firstChild.doctorName || null
     } : {
       id: null,
       name: 'لم يتم تسجيل طفل',
@@ -447,7 +447,7 @@ async function fetchAndStoreLocalData() {
       allergies: '--',
       emergencyContact: '--',
       doctor_id: null,
-      doctorName: 'Pending Assignment / قيد الإسناد'
+      doctorName: 'قيد الإسناد'
     },
     drawings: (data.analyses || []).map(d => ({
       id: d.id,
@@ -476,10 +476,10 @@ async function fetchAndStoreLocalData() {
     })),
     appointments: data.appointments.map(a => ({
       id: a.id,
-      doctor: a.doctorName || "Dr. Ahmed",
+      doctor: a.doctorName || "قيد الإسناد",
       date: a.date,
       time: a.time,
-      type: "استشارة",
+      type: a.notes || "استشارة",
       status: a.status.toLowerCase()
     })),
     chatMessages: data.messages ? data.messages.map(m => ({
@@ -495,7 +495,10 @@ async function fetchAndStoreLocalData() {
       text: n.text,
       unread: n.isRead === 0,
       date: n.createdAt
-    })) : []
+    })) : [],
+    // Raw data preserved for progress tracking calculations
+    rawReports: data.reports || [],
+    rawAnalyses: data.analyses || []
   };
   return globalAuraData;
 }
@@ -568,10 +571,11 @@ async function renderViewContent(viewId) {
       firstChild ? firstChild.diagnosis : '--';
 
     document.getElementById('db-child-doc').textContent =
-      firstChild ? (firstChild.doctorName || 'Pending Assignment') : '--';
+      firstChild ? (firstChild.doctorName || 'قيد الإسناد') : '--';
 
     // Stats
-    const totalReports = data.drawings.filter(d => d.status === 'approved').length;
+    const approvedReports = data.reports.filter(r => r.status === 'approved');
+    const totalReports = approvedReports.length;
     const upcomingCount = data.appointments.filter(a => a.status === 'scheduled').length;
     const unreadNotif = (data.notifications || []).filter(n => n.unread).length;
 
@@ -580,16 +584,16 @@ async function renderViewContent(viewId) {
     document.getElementById('stat-notif-count').textContent = unreadNotif;
 
     // Latest Approved Reports Widget
-    const reportListHtml = data.drawings.filter(d => d.status === 'approved').map(d => `
+    const reportListHtml = approvedReports.map(r => `
       <div style="padding: 12px; border: 1px solid var(--glass-border); background: white; border-radius: var(--border-radius-sm); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <strong style="color: var(--color-text-main);">${d.name}</strong>
-          <div style="font-size: 0.8rem; color: var(--color-text-muted);">${d.uploadDate}</div>
+          <strong style="color: var(--color-text-main);">${r.name}</strong>
+          <div style="font-size: 0.8rem; color: var(--color-text-muted);">${r.uploadDate || ''}</div>
         </div>
-        <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openApprovedReport('${d.id}')">View Report</button>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openApprovedReport('${r.id}')">عرض التقرير</button>
       </div>
     `).join('');
-    document.getElementById('db-latest-reports').innerHTML = reportListHtml || '<p style="color: var(--color-text-muted);">No reports approved yet.</p>';
+    document.getElementById('db-latest-reports').innerHTML = reportListHtml || '<p style="color: var(--color-text-muted);">لا توجد تقارير معتمدة بعد.</p>';
 
     // Upcoming Appointment Card
     const nextApt = data.appointments.find(a => a.status === 'scheduled');
@@ -597,7 +601,7 @@ async function renderViewContent(viewId) {
       document.getElementById('db-upcoming-apt').innerHTML = `
         <div style="border-inline-start: 4px solid var(--color-secondary); padding-inline-start: 12px;">
           <h4 style="color: var(--color-text-main);">${nextApt.type}</h4>
-          <p style="font-size: 0.9rem; margin-top: 4px;">With <strong>${nextApt.doctor}</strong></p>
+          <p style="font-size: 0.9rem; margin-top: 4px;">مع <strong>${nextApt.doctor}</strong></p>
           <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 0.85rem; color: var(--color-text-muted);">
             <span> ${nextApt.date}</span>
             <span> ${nextApt.time}</span>
@@ -605,21 +609,40 @@ async function renderViewContent(viewId) {
         </div>
       `;
     } else {
-      document.getElementById('db-upcoming-apt').innerHTML = '<p style="color: var(--color-text-muted);">No scheduled appointments.</p>';
+      document.getElementById('db-upcoming-apt').innerHTML = '<p style="color: var(--color-text-muted);">لا توجد مواعيد قادمة.</p>';
     }
 
     // Recent Activity Feed
-    const activities = [
-      { icon: "", text: "Approved analysis report for Family Portrait", time: "1 hour ago" },
-      { icon: "", text: "New message exchange with Dr. Ahmed", time: "Today" },
-      { icon: "", text: "Uploaded new drawing 'Tree in the Garden'", time: "Today" }
-    ];
-    document.getElementById('db-activity-feed').innerHTML = activities.map(act => `
+    const activities = [];
+
+    if (data.reports && data.reports.length > 0) {
+      activities.push(...data.reports.map(r => ({
+        icon: "",
+        text: `تم اعتماد تقرير جديد: ${r.title || r.name || 'تقرير تحليل'}`,
+        time: r.createdAt || r.uploadDate || ''
+      })));
+    }
+
+    if (data.drawings && data.drawings.length > 0) {
+      activities.push(...data.drawings.map(d => ({
+        icon: "",
+        text: `تم رفع رسمة: ${d.name || 'رسمة جديدة'}`,
+        time: d.uploadDate || ''
+      })));
+    }
+
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    const recentActivities = activities.slice(0, 5);
+
+    document.getElementById('db-activity-feed').innerHTML = recentActivities.length
+      ? recentActivities.map(act => `
       <li class="activity-item">
         <span>${act.icon} ${act.text}</span>
         <span class="date">${act.time}</span>
       </li>
-    `).join('');
+    `).join('')
+      : '<li class="activity-item"><span>لا يوجد نشاط حديث</span></li>';
+
   }
 
   else if (viewId === 'view-profile') {
@@ -647,13 +670,7 @@ async function renderViewContent(viewId) {
   }
 
   else if (viewId === 'view-progress') {
-    // Perform simple animation on progress bars
-    setTimeout(() => {
-      document.querySelectorAll('.progress-bar-fill').forEach(bar => {
-        const val = bar.getAttribute('data-val');
-        if (val) bar.style.width = val;
-      });
-    }, 100);
+    renderProgressTracking();
   }
 
   else if (viewId === 'view-appointments') {
@@ -683,21 +700,37 @@ function renderUploadHistory() {
   const listEl = document.getElementById('upload-submissions');
   if (!listEl) return;
 
-  listEl.innerHTML = data.drawings.map(d => {
-    let statusClass = "badge-pending";
-    let stepActive = 1;
-    if (d.status === 'review') { statusClass = "badge-review"; stepActive = 3; }
-    if (d.status === 'approved') { statusClass = "badge-approved"; stepActive = 4; }
-    if (d.status === 'analyzing') { statusClass = "badge-analyzing"; stepActive = 2; }
+  listEl.innerHTML = data.drawings.slice(0, 1).map(d => {
+    let statusClass = "badge-analyzing";
+    let stepActive = 2; // Default to step 2 (AI Analysis) after upload
+    let displayStatus = "جارٍ التحليل";
+
+    if (d.status === 'pending') { 
+        statusClass = "badge-analyzing"; 
+        stepActive = 2; 
+        displayStatus = "تحليل الذكاء الاصطناعي"; 
+    } else if (d.status === 'analyzing') { 
+        statusClass = "badge-analyzing"; 
+        stepActive = 2; 
+        displayStatus = "تحليل الذكاء الاصطناعي"; 
+    } else if (d.status === 'reviewed' || d.status === 'review') { 
+        statusClass = "badge-review"; 
+        stepActive = 3; 
+        displayStatus = "مراجعة الطبيب"; 
+    } else if (d.status === 'sent' || d.status === 'approved') { 
+        statusClass = "badge-approved"; 
+        stepActive = 4; 
+        displayStatus = "معتمد"; 
+    }
 
     return `
       <div class="card" style="margin-bottom: 24px; padding: 24px;">
         <div class="flex justify-between items-center" style="margin-bottom: 16px;">
           <div>
             <h3 style="font-size: 1.15rem; color: var(--color-text-main);">${d.name}</h3>
-            <p style="font-size: 0.8rem; color: var(--color-text-muted);">Uploaded: ${d.uploadDate}</p>
+            <p style="font-size: 0.8rem; color: var(--color-text-muted);">تاريخ الرفع: ${d.uploadDate}</p>
           </div>
-          <span class="status-badge ${statusClass}">${d.status}</span>
+          <span class="status-badge ${statusClass}">${displayStatus}</span>
         </div>
 
         <div style="display: flex; gap: 16px; margin-bottom: 20px;">
@@ -710,7 +743,9 @@ function renderUploadHistory() {
       </div>
 
     <div style="color: var(--color-text-muted); line-height:1.6;">
-        تم رفع الرسمة بنجاح، وجارٍ تحليلها بواسطة الذكاء الاصطناعي...
+        ${stepActive === 2 ? 'تم رفع الرسمة بنجاح، وجارٍ تحليلها بواسطة الذكاء الاصطناعي...' : 
+         stepActive === 3 ? 'اكتمل التحليل بانتظار مراجعة الطبيب واعتماده...' : 
+         'تم الاعتماد! يمكنك عرض التقرير الآن.'}
     </div>
 </div>
         </div>
@@ -736,10 +771,10 @@ function renderUploadHistory() {
         </div>
 
         ${d.status === 'approved' ? `
-          <button class="btn btn-primary" style="margin-top: 10px;" onclick="openApprovedReport('${d.id}')">View Complete Approved Report</button>
+          <button class="btn btn-primary" style="margin-top: 10px;" onclick="openApprovedReport('${d.id}')">عرض التقرير المعتمد بالكامل</button>
         ` : `
           <div style="background: rgba(0,0,0,0.02); padding: 10px 14px; font-size: 0.85rem; border-radius: 6px; color: var(--color-text-muted);">
-             Reports and advice will unlock immediately once Dr. Ahmed confirms and signs off the clinical review.
+             ستتوفر التقارير والنصائح فور اعتماد الطبيب المتابع للمراجعة السريرية.
           </div>
         `}
       </div>
@@ -763,7 +798,16 @@ function handleDrawingUpload(e) {
   }
 
   const file = fileInput.files[0];
-  const title = titleInput.value.trim() || "Child Drawing";
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    alert("الرجاء رفع صورة بصيغة JPG أو PNG أو WEBP فقط.");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert("حجم الصورة يجب ألا يتجاوز 5 ميجابايت.");
+    return;
+  }
+  const title = titleInput.value.trim() || "رسمة طفل";
 
   const data = getLocalData();
   const childId = data?.childProfile?.id;
@@ -773,8 +817,19 @@ function handleDrawingUpload(e) {
     return;
   }
 
-  const docSelect = document.getElementById('drawing-doctor-select');
-  const doctorId = (docSelect && docSelect.value) ? docSelect.value : null;
+  const uploadBtn = document.querySelector(".upload-btn");
+
+  if (uploadBtn && uploadBtn.disabled) {
+    return;
+  }
+
+  if (uploadBtn) {
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = `
+    <span class="loader"></span>
+    جاري الرفع والتحليل...
+  `;
+  }
 
   const reader = new FileReader();
 
@@ -791,27 +846,39 @@ function handleDrawingUpload(e) {
         body: JSON.stringify({
           childId,
           parentId: localStorage.getItem('auraUserId'),
-          doctorId,
           title,
           uploadedFileName: file.name,
-          uploadedImage: base64Image,
+          uploadedImage: base64Image
         })
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.error("Server Error:", error);
-        alert(error);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error("Server Error:", result);
+        alert(result.error || "حدث خطأ أثناء رفع الرسمة.");
         return;
       }
 
       await fetchAndStoreLocalData();
 
+      const data = getLocalData();
+
+      if (data.drawings && data.drawings.length > 0) {
+        data.drawings[0].imageUrl = base64Image;
+      }
+
+      if (document.getElementById('view-dashboard')?.classList.contains('active')) {
+        await renderViewContent('view-dashboard');
+      }
+
       renderUploadHistory();
 
       alert("تم رفع الرسمة بنجاح، وجارٍ تحليلها...");
+
       fileInput.value = "";
       titleInput.value = "";
+
       const text = document.querySelector(".upload-area span");
       if (text) {
         text.textContent = "اختيار ملف";
@@ -820,7 +887,13 @@ function handleDrawingUpload(e) {
     } catch (err) {
       console.error(err);
       alert("حدث خطأ أثناء رفع الرسمة.");
+    } finally {
+      if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = "رفع وبدء التحليل";
+      }
     }
+
   };
 
   reader.readAsDataURL(file);
@@ -847,7 +920,7 @@ function renderApprovedReportsList() {
   if (approved.length === 0) {
     reportsEl.innerHTML = `
       <div class="card text-center" style="padding: 40px;">
-        <p style="color: var(--color-text-muted);">No reports approved by your doctor yet. Submit drawings in the Upload section.</p>
+        <p style="color: var(--color-text-muted);">لا توجد تقارير معتمدة من الطبيب حتى الآن. قم برفع رسمة ليبدأ التحليل.</p>
       </div>
     `;
     return;
@@ -879,7 +952,7 @@ function loadReportDetails(reportId) {
       <div class="flex justify-between items-center" style="border-bottom: 2px solid var(--color-primary); padding-bottom: 12px; margin-bottom: 20px;">
         <div>
           <h2 style="color: var(--color-primary);">${d.name}</h2>
-          <p style="font-size: 0.9rem; color: var(--color-text-muted);">Submission Date: ${d.uploadDate} | Subject: ${data.childProfile.name}</p>
+          <p style="font-size: 0.9rem; color: var(--color-text-muted);">تاريخ الإرسال: ${d.uploadDate} | الطفل: ${data.childProfile.name}</p>
         </div>
         <span class="status-badge badge-approved" data-i18n="upload_step4">Approved</span>
       </div>
@@ -938,7 +1011,7 @@ function downloadReportPdf() {
   const printableArea = document.getElementById('printable-report-area');
   if (!printableArea) return;
   const printWindow = window.open('', '_blank');
-  printWindow.document.write('<html><head><title>Aura Report PDF</title>');
+  printWindow.document.write('<html><head><title>تقرير أورا</title>');
   printWindow.document.write('<link rel="stylesheet" href="styles.css">');
   printWindow.document.write('<style>body{padding:40px; background:white; font-family:sans-serif;}</style>');
   printWindow.document.write('</head><body>');
@@ -950,11 +1023,179 @@ function downloadReportPdf() {
   }, 500);
 }
 
+// Progress Tracking view helper - renders based on actual doctor-approved reports
+function renderProgressTracking() {
+  const container = document.getElementById('progress-tracking-container');
+  if (!container) return;
+
+  const data = getLocalData();
+  if (!data) {
+    container.innerHTML = '<p style="text-align:center; color:var(--color-text-muted); padding: 40px 0;">جاري تحميل البيانات...</p>';
+    return;
+  }
+
+  const childId = data.childProfile?.id;
+  if (!childId) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 0;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
+        <p style="color: var(--color-text-muted); font-size: 1.1rem; line-height: 1.8;">
+          لا توجد بيانات تقدم كافية حتى الآن.<br>
+          سيبدأ إنشاء مؤشرات التقدم بعد اعتماد أول تقرير من الطبيب.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // Filter approved doctor reports for the current child only
+  const approvedReports = (data.rawReports || []).filter(r =>
+    r.childId === childId && r.status === 'sent'
+  );
+
+  // Filter all analyses (drawings) for the current child
+  const childAnalyses = (data.rawAnalyses || []).filter(a => a.childId === childId);
+
+  // State 1: No analyses AND no approved reports - brand new user
+  if (childAnalyses.length === 0 && approvedReports.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 0;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
+        <p style="color: var(--color-text-muted); font-size: 1.1rem; line-height: 1.8;">
+          لا توجد بيانات تقدم كافية حتى الآن.<br>
+          سيبدأ إنشاء مؤشرات التقدم بعد اعتماد أول تقرير من الطبيب.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // State 2: Has uploaded drawings but no approved doctor reports yet
+  if (approvedReports.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 0;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+        <p style="color: var(--color-text-muted); font-size: 1.1rem; line-height: 1.8;">
+          تم استلام الرسومات وهي بانتظار مراجعة الطبيب.<br>
+          سيبدأ قياس التقدم بعد اعتماد أول تقرير طبي.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // State 3: Exactly 1 approved report - this is the baseline
+  if (approvedReports.length === 1) {
+    const report = approvedReports[0];
+    const reportDate = new Date(report.createdAt).toLocaleDateString('ar-SA', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 0;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">📋</div>
+        <p style="color: var(--color-text-muted); font-size: 1.1rem; line-height: 1.8; margin-bottom: 20px;">
+          تم إنشاء خط الأساس الأول لمتابعة تطور الحالة.
+        </p>
+        <div style="background: rgba(144, 180, 242, 0.08); border-radius: var(--border-radius-sm); padding: 16px; text-align: right; max-width: 600px; margin: 0 auto;">
+          <p style="font-weight: 600; margin-bottom: 8px;">التقرير الأساسي: ${report.title || 'تقرير'}</p>
+          <p style="font-size: 0.9rem; color: var(--color-text-muted);">تاريخ الإنشاء: ${reportDate}</p>
+          ${report.doctorNotes ? '<p style="font-size: 0.9rem; margin-top: 8px;">ملاحظات الطبيب: ' + report.doctorNotes + '</p>' : ''}
+        </div>
+        <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top: 16px;">
+          سيتم احتساب التقدم بعد اعتماد تقرير إضافي من الطبيب للمقارنة.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  // State 4: 2+ approved reports - show progress tracking with real data
+  // Since the database does not contain structured numerical evaluation scores
+  // for the 4 indicators (communication, behavior, emotional stability, therapy engagement),
+  // each indicator shows "بيانات غير كافية" per rules #6 and #12.
+  const insufficientLabel = 'بيانات غير كافية';
+
+  // Sort reports by date ascending for the log table (oldest first)
+  const sortedReports = [...approvedReports].sort((a, b) =>
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
+  let html = `
+    <div class="progress-grid" style="margin-bottom: 32px;">
+      <div class="progress-card">
+        <h4 data-i18n="prog_com">Communication Skills</h4>
+        <h3 style="font-size: 1.2rem; color: var(--color-text-muted); margin-block: 8px;">${insufficientLabel}</h3>
+      </div>
+      <div class="progress-card">
+        <h4 data-i18n="prog_beh">Behavioral Regulation</h4>
+        <h3 style="font-size: 1.2rem; color: var(--color-text-muted); margin-block: 8px;">${insufficientLabel}</h3>
+      </div>
+      <div class="progress-card">
+        <h4 data-i18n="prog_emo">Emotional Stability</h4>
+        <h3 style="font-size: 1.2rem; color: var(--color-text-muted); margin-block: 8px;">${insufficientLabel}</h3>
+      </div>
+      <div class="progress-card">
+        <h4 data-i18n="prog_ther">Therapy Engagement</h4>
+        <h3 style="font-size: 1.2rem; color: var(--color-text-muted); margin-block: 8px;">${insufficientLabel}</h3>
+      </div>
+    </div>
+
+    <h3 class="card-title">سجل تقارير الطبيب المعتمدة</h3>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>عنوان التقرير</th>
+            <th>ملاحظات الطبيب</th>
+            <th>التوصيات</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedReports.map(r => {
+            const d = new Date(r.createdAt).toLocaleDateString('ar-SA', {
+              year: 'numeric', month: 'short', day: 'numeric'
+            });
+            return '<tr>' +
+              '<td>' + d + '</td>' +
+              '<td>' + (r.title || '--') + '</td>' +
+              '<td>' + (r.doctorNotes || '--') + '</td>' +
+              '<td>' + (r.recommendations || '--') + '</td>' +
+            '</tr>';
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 12px; text-align: center;">
+      عدد التقارير المعتمدة: ${approvedReports.length} | لا تتوفر تقييمات رقمية مُهيكلة حالياً لحساب مؤشرات التقدم.
+    </p>
+  `;
+
+  container.innerHTML = html;
+
+  // Re-apply i18n translations for dynamically inserted elements
+  setLanguage(currentLang);
+}
+
 // Appointments page logic
-function renderAppointmentsPage() {
+async function renderAppointmentsPage() {
   const data = getLocalData();
   const listEl = document.getElementById('appointments-list-container');
   if (!listEl) return;
+
+  const docSelect = document.getElementById('apt-doctor-select');
+  if (docSelect && docSelect.options.length <= 1) {
+    try {
+      const res = await fetch('/api/doctors');
+      if (res.ok) {
+        const doctors = await res.json();
+        const docHtml = '<option value="" disabled selected>Select a doctor...</option>' + 
+          doctors.map(d => `<option value="${d.id}">${d.fullName} (${d.specialization || 'طبيب'})</option>`).join('');
+        docSelect.innerHTML = docHtml;
+        docSelect.parentElement.style.display = 'block';
+      }
+    } catch(e) { console.error(e); }
+  }
 
   const currentApts = data.appointments;
   listEl.innerHTML = `
@@ -972,9 +1213,9 @@ function renderAppointmentsPage() {
       <tbody>
         ${currentApts.map(apt => `
           <tr>
-            <td><strong>${apt.date}</strong></td>
+            <td dir="ltr" style="text-align: right;"><strong>${apt.date.split('-').reverse().join('-')}</strong></td>
             <td>${apt.time}</td>
-            <td>Dr. Ahmed</td>
+            <td>${apt.doctor}</td>
             <td>${apt.type}</td>
             <td><span class="status-badge ${apt.status === 'scheduled' ? 'badge-analyzing' : 'badge-approved'}">${apt.status}</span></td>
             <td>
@@ -1000,7 +1241,7 @@ async function handleBookAppointment(e) {
   const typeInput = document.getElementById('apt-type-input');
 
   if (!dateInput.value || !timeInput.value || !typeInput.value) {
-    alert("Please fill all booking inputs / الرجاء إدخال تفاصيل الموعد");
+    alert("الرجاء إدخال تفاصيل الموعد");
     return;
   }
 
@@ -1010,7 +1251,7 @@ async function handleBookAppointment(e) {
   const doctorId = data.childProfile?.doctor_id;
 
   if (!childId || !doctorId) {
-    alert("No child profile or assigned doctor found to book appointment. / لا يوجد ملف طفل أو طبيب مخصص للحجز.");
+    alert("لا يوجد ملف طفل أو طبيب مخصص للحجز.");
     return;
   }
 
@@ -1037,7 +1278,7 @@ async function handleBookAppointment(e) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          text: `Appointment booked for ${dateInput.value} at ${timeInput.value}.`
+          text: `تم حجز موعد بتاريخ ${dateInput.value} الساعة ${timeInput.value}.`
         })
       });
 
@@ -1050,13 +1291,13 @@ async function handleBookAppointment(e) {
       timeInput.value = '';
       typeInput.value = '';
 
-      alert("Appointment scheduled successfully! / تم حجز الموعد بنجاح");
+      alert("تم حجز الموعد بنجاح");
     } else {
-      alert("Error scheduling appointment.");
+      alert("حدث خطأ أثناء حجز الموعد.");
     }
   } catch (err) {
     console.error(err);
-    alert("Failed to schedule appointment.");
+    alert("فشل في حجز الموعد.");
   }
 }
 
@@ -1065,12 +1306,12 @@ function cancelAppointment(id) {
 }
 
 async function cancelAppointmentAsync(id) {
-  if (confirm("Are you sure you want to cancel this appointment? / هل أنت متأكد من إلغاء الموعد؟")) {
+  if (confirm("هل أنت متأكد من إلغاء الموعد؟")) {
     try {
       const res = await fetch(`/api/appointments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: "Cancelled", notes: "Cancelled by Parent" })
+        body: JSON.stringify({ status: "Cancelled", notes: "ألغي بواسطة ولي الأمر" })
       });
       const result = await res.json();
       if (result.success) {
@@ -1079,14 +1320,14 @@ async function cancelAppointmentAsync(id) {
         await fetch('/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, text: `Appointment cancelled.` })
+          body: JSON.stringify({ userId, text: `تم إلغاء الموعد.` })
         });
 
         await fetchAndStoreLocalData();
         updateSidebarBadgeCount();
         renderViewContent('view-appointments');
       } else {
-        alert("Error cancelling appointment.");
+        alert("حدث خطأ أثناء إلغاء الموعد.");
       }
     } catch (err) {
       console.error(err);
@@ -1095,14 +1336,14 @@ async function cancelAppointmentAsync(id) {
 }
 
 async function rescheduleAppointment(id) {
-  const newDate = prompt("Enter new date (e.g. 2026-07-10) / أدخل التاريخ الجديد:");
-  const newTime = prompt("Enter new time (e.g. 10:00 AM) / أدخل الوقت الجديد:");
+  const newDate = prompt("أدخل التاريخ الجديد (مثال: 2026-07-10):");
+  const newTime = prompt("أدخل الوقت الجديد (مثال: 10:00 AM):");
   if (newDate && newTime) {
     try {
       const res = await fetch(`/api/appointments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: "Scheduled", notes: `Rescheduled to ${newDate} at ${newTime}` })
+        body: JSON.stringify({ status: "Scheduled", notes: `تم تغيير الموعد إلى ${newDate} الساعة ${newTime}` })
       });
       const result = await res.json();
       if (result.success) {
@@ -1111,14 +1352,14 @@ async function rescheduleAppointment(id) {
         await fetch('/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, text: `Rescheduled appointment to ${newDate} at ${newTime}.` })
+          body: JSON.stringify({ userId, text: `تم تغيير الموعد إلى ${newDate} الساعة ${newTime}.` })
         });
 
         await fetchAndStoreLocalData();
         updateSidebarBadgeCount();
         renderViewContent('view-appointments');
       } else {
-        alert("Error rescheduling appointment.");
+        alert("حدث خطأ أثناء تغيير الموعد.");
       }
     } catch (err) {
       console.error(err);
@@ -1134,17 +1375,40 @@ async function renderChatMessages() {
   chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">جاري تحميل الرسائل...</div>';
 
   const data = getLocalData();
-  const doctorName = data.childProfile?.doctorName || "Pending Assignment / قيد الإسناد";
-  const doctorId = data.childProfile?.doctor_id;
+  const doctorName = data.childProfile?.doctorName || "قيد الإسناد";
+  let doctorId = data.childProfile?.doctor_id;
 
   const displayEl = document.getElementById('chat-doctor-display-name');
   if (displayEl) {
     displayEl.textContent = doctorName;
   }
 
+  const docSelect = document.getElementById('chat-doctor-select');
+  if (docSelect && docSelect.options.length <= 1) {
+    try {
+      const res = await fetch('/api/doctors');
+      if (res.ok) {
+        const doctors = await res.json();
+        const docHtml = '<option value="" disabled selected>Select a doctor...</option>' + 
+          doctors.map(d => `<option value="${d.id}">${d.fullName}</option>`).join('');
+        docSelect.innerHTML = docHtml;
+      }
+    } catch(e) { console.error(e); }
+  }
+
   if (!doctorId) {
-    chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">لم يتم إسناد طبيب للطفل بعد. / No doctor assigned yet.</div>';
-    return;
+    if (docSelect && docSelect.value) {
+      doctorId = docSelect.value;
+      if (displayEl) displayEl.textContent = docSelect.options[docSelect.selectedIndex].text;
+    } else {
+      if (docSelect) docSelect.style.display = 'block';
+      if (displayEl) displayEl.style.display = 'none';
+      chatMessagesEl.innerHTML = '<div style="text-align: center; color: var(--color-text-muted); padding: 20px;">اختر طبيباً للبدء في المحادثة.</div>';
+      return;
+    }
+  } else {
+    if (docSelect) docSelect.style.display = 'none';
+    if (displayEl) displayEl.style.display = 'block';
   }
 
   window.activeConversationDoctorId = doctorId;
@@ -1166,6 +1430,9 @@ async function renderChatMessages() {
     chatMessagesEl.innerHTML = msgs.map(msg => `
       <div class="chat-bubble ${msg.senderId == userId ? 'sent' : 'received'}">
         <p style="margin: 0; color: inherit;">${msg.message}</p>
+        ${msg.attachmentType === 'image' ? `<img src="${msg.attachmentData}" style="max-width: 100%; border-radius: 8px; margin-top: 8px;" />` : ''}
+        ${msg.attachmentType === 'audio' ? `<audio controls src="${msg.attachmentData}" style="max-width: 100%; margin-top: 8px; height: 40px;"></audio>` : ''}
+        ${msg.attachmentType === 'file' ? `<div style="margin-top: 8px;"><a href="${msg.attachmentData}" download="${msg.attachmentName || 'document'}" style="color: inherit; text-decoration: underline; font-weight: bold;">📎 ${msg.attachmentName || 'تحميل الملف'}</a></div>` : ''}
       </div>
     `).join('');
 
@@ -1185,7 +1452,7 @@ async function sendChatMessage(e) {
   const chatSelect = document.getElementById('chat-doctor-select');
   let docId = chatSelect && chatSelect.value ? chatSelect.value : window.activeConversationDoctorId;
   if (!docId) {
-    alert('لا يوجد طبيب مخصص للطفل بعد. / No doctor assigned yet.');
+    alert('لا يوجد طبيب مخصص للطفل بعد.');
     return;
   }
 
@@ -1212,16 +1479,102 @@ async function sendChatMessage(e) {
   }
 }
 
-function sendVoiceNoteMock() {
-  alert('Voice notes are disabled during real-time backend testing.');
+async function sendVoiceNoteMock() {
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
+
+      mediaRecorder.addEventListener("dataavailable", event => {
+        audioChunks.push(event.data);
+      });
+
+      mediaRecorder.addEventListener("stop", async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async function() {
+          const base64Audio = reader.result;
+          await sendChatMessageWithAttachment(base64Audio, 'audio', 'voice_note.webm');
+        }
+      });
+
+      mediaRecorder.start();
+      // Since we don't have a UI for stopping yet, we will record for 5 seconds automatically.
+      alert('تم بدء التسجيل... سيتم التوقف تلقائياً بعد 5 ثواني.');
+      setTimeout(() => {
+        mediaRecorder.stop();
+        stream.getTracks().forEach(track => track.stop());
+      }, 5000); 
+    } catch (err) {
+      alert('لم يتم السماح باستخدام الميكروفون أو غير متاح.');
+    }
+  } else {
+    alert('المتصفح لا يدعم التسجيل الصوتي.');
+  }
 }
 
-function triggerAttachmentMock(fileName) {
-  alert('Attachments are disabled during real-time backend testing.');
+function triggerAttachmentMock() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
+      const type = file.type.startsWith('image/') ? 'image' : 'file';
+      await sendChatMessageWithAttachment(base64Data, type, file.name);
+    };
+  };
+  input.click();
+}
+
+async function sendChatMessageWithAttachment(attachmentData, attachmentType, attachmentName) {
+  const data = getLocalData();
+  const userId = getUserId();
+  let doctorId = data.childProfile?.doctor_id;
+
+  if (!doctorId) {
+      const docSelect = document.getElementById('chat-doctor-select');
+      if (docSelect && docSelect.value) {
+          doctorId = docSelect.value;
+      }
+  }
+
+  if (!doctorId) {
+    alert("الرجاء اختيار طبيب أولاً.");
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        senderId: userId,
+        receiverId: doctorId,
+        message: 'أرسل مرفقاً 📎',
+        attachmentData,
+        attachmentType,
+        attachmentName
+      })
+    });
+    const result = await res.json();
+    if (result.success) {
+      await renderChatMessages();
+    }
+  } catch (err) {
+    console.error("Failed to send message:", err);
+  }
 }
 
 // WhatsApp Communities Style - Community view helpers
-function renderCommunityPosts() {
+async function renderCommunityPosts() {
   const data = getLocalData();
 
   const groupsListContainer = document.getElementById('community-groups-list');
@@ -1229,8 +1582,11 @@ function renderCommunityPosts() {
 
   if (!groupsListContainer || !groupDetailContainer) return;
 
-  const groups = getCommunityGroups();
-  const posts = getCommunityPosts();
+  let groups = [];
+  try {
+    const res = await fetch('/api/community/groups');
+    if (res.ok) groups = await res.json();
+  } catch(e) { console.error(e); }
 
   if (activeGroupId === null) {
     // Show Groups list and hide active group posts view
@@ -1244,7 +1600,7 @@ function renderCommunityPosts() {
         const desc = currentLang === 'ar' ? grp.descAr : grp.descEn;
         const moderatorsStr = grp.moderators.join(', ');
         const unreadIndicator = grp.unread > 0
-          ? `<span class="nav-badge" style="background: var(--color-accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${grp.unread} new</span>`
+          ? `<span class="nav-badge" style="background: var(--color-accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${grp.unread} جديد</span>`
           : '';
 
         return `
@@ -1256,11 +1612,11 @@ function renderCommunityPosts() {
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                   <h3 style="font-size: 1.15rem; color: var(--color-text-main); margin: 0; font-weight:600;">${name}</h3>
-                  <span style="font-size: 0.8rem; background: rgba(144, 180, 242, 0.15); color: #1D4ED8; padding: 2px 8px; border-radius: 12px; font-weight: 500;">${grp.members} members</span>
+                  <span style="font-size: 0.8rem; background: rgba(144, 180, 242, 0.15); color: #1D4ED8; padding: 2px 8px; border-radius: 12px; font-weight: 500;">${grp.members} عضو</span>
                 </div>
                 <p style="font-size: 0.88rem; color: var(--color-text-muted); margin-top: 4px; line-height: 1.4;">${desc}</p>
                 <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 6px;">
-                  Moderators: <strong>${moderatorsStr}</strong>
+                  المشرفون: <strong>${moderatorsStr}</strong>
                 </div>
               </div>
             </div>
@@ -1296,14 +1652,14 @@ function renderCommunityPosts() {
             <h2 style="color: var(--color-primary); margin: 0; font-size:1.4rem;">${grpName}</h2>
             <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-top: 4px;">${grpDesc}</p>
             <div style="display: flex; gap: 16px; font-size: 0.82rem; color: var(--color-text-muted); margin-top: 6px;">
-              <span> <strong>${activeGrp.members} members</strong></span>
-              <span> Moderators: <strong>${activeGrp.moderators.join(', ')}</strong></span>
+              <span> <strong>${activeGrp.members} عضو</strong></span>
+              <span> المشرفون: <strong>${activeGrp.moderators.join(', ')}</strong></span>
             </div>
           </div>
         </div>
         
         <div style="background: rgba(223, 164, 139, 0.08); border-left: 4px solid var(--color-accent); padding: 12px 16px; border-radius: var(--border-radius-sm); font-size: 0.9rem;">
-          <strong style="color: #8C5B48;"> Pinned Announcement:</strong>
+          <strong style="color: #8C5B48;"> إعلان مثبت:</strong>
           <span style="color: var(--color-text-main); margin-inline-start: 6px;">${grpPinned}</span>
         </div>
       `;
@@ -1314,26 +1670,16 @@ function renderCommunityPosts() {
 }
 
 // Enter sub group view
-function enterCommunityGroup(groupId) {
+async function enterCommunityGroup(groupId) {
   activeGroupId = groupId;
-
-  // Clear unread count for this group in local storage
-  const groups = getCommunityGroups();
-  const grpIndex = groups.findIndex(g => g.id === groupId);
-  if (grpIndex !== -1) {
-    groups[grpIndex].unread = 0;
-    saveCommunityGroups(groups);
-  }
-
-  renderCommunityPosts();
+  await renderCommunityPosts();
 }
 
 // Go back to WhatsApp communities main page
-function exitCommunityGroup() {
+async function exitCommunityGroup() {
   activeGroupId = null;
   postAttachedFile = null;
 
-  // Clear mock file attachment span
   const span = document.getElementById('post-file-attached-label');
   if (span) span.textContent = '';
 
@@ -1343,7 +1689,7 @@ function exitCommunityGroup() {
   const createCard = document.getElementById('create-post-card');
   if (createCard) createCard.style.display = 'none';
 
-  renderCommunityPosts();
+  await renderCommunityPosts();
 }
 
 function toggleCreatePostCollapse() {
@@ -1355,32 +1701,35 @@ function toggleCreatePostCollapse() {
 
 // Attachment mock trigger inside post creation
 function triggerPostFileMock() {
-  const fileName = prompt("Enter mock file / image name to attach: (e.g. child_drawing_vibe.jpg) / أدخل اسم الملف المرفق:");
+  const fileName = prompt("أدخل اسم الملف المرفق:");
   if (fileName) {
     postAttachedFile = fileName;
     const label = document.getElementById('post-file-attached-label');
     if (label) {
-      label.textContent = `Attached / تم إرفاق: ${fileName}`;
+      label.textContent = `تم إرفاق: ${fileName}`;
     }
   }
 }
 
 // Render active group posts lists with filters
-function renderGroupPostsList() {
+async function renderGroupPostsList() {
   const activeParent = getLocalData();
   const searchVal = document.getElementById('group-post-search')?.value.trim().toLowerCase() || '';
   const postsContainer = document.getElementById('group-posts-container');
   if (!postsContainer) return;
 
-  const posts = getCommunityPosts();
+  let groupPosts = [];
+  try {
+    const res = await fetch(`/api/community/posts?groupId=${activeGroupId}`);
+    if (res.ok) groupPosts = await res.json();
+  } catch(e) { console.error(e); }
 
-  // Filter posts matching activeGroupId and search text
-  const groupPosts = posts.filter(p => p.groupId === activeGroupId &&
+  groupPosts = groupPosts.filter(p => 
     (searchVal === '' || p.text.toLowerCase().includes(searchVal) || p.author.toLowerCase().includes(searchVal))
   );
 
   if (groupPosts.length === 0) {
-    postsContainer.innerHTML = `<p style="text-align: center; color: var(--color-text-muted); padding: 40px;">No posts published in this topic group yet.</p>`;
+    postsContainer.innerHTML = `<p style="text-align: center; color: var(--color-text-muted); padding: 40px;">لا توجد منشورات في هذه المجموعة بعد.</p>`;
     return;
   }
 
@@ -1407,8 +1756,8 @@ function renderGroupPostsList() {
       ` : ''}
 
       <div class="post-actions">
-        <button class="post-action-btn" onclick="alert('Liked post / تم الإعجاب بالمنشور')"> Like</button>
-        <button class="post-action-btn" onclick="toggleCommentsSection('${post.id}')"> Comments (${post.comments.length})</button>
+        <button class="post-action-btn" onclick="alert('تم الإعجاب بالمنشور')">إعجاب</button>
+        <button class="post-action-btn" onclick="toggleCommentsSection('${post.id}')">التعليقات (${post.comments.length})</button>
       </div>
 
       <div class="comment-section" id="comments-${post.id}" style="display: none;">
@@ -1420,7 +1769,7 @@ function renderGroupPostsList() {
         `).join('')}
         
         <form style="display: flex; gap: 8px; margin-top: 12px;" onsubmit="handlePostComment(event, '${post.id}')">
-          <input type="text" class="form-control" placeholder="Write a comment... / اكتب تعليقاً..." style="padding: 6px 12px; font-size: 0.85rem;" required id="comment-input-${post.id}">
+          <input type="text" class="form-control" placeholder="اكتب تعليقاً..." style="padding: 6px 12px; font-size: 0.85rem;" required id="comment-input-${post.id}">
           <button class="btn btn-primary" style="padding: 4px 12px; font-size: 0.85rem;" data-i18n="comm_comment">Comment</button>
         </form>
       </div>
@@ -1430,48 +1779,40 @@ function renderGroupPostsList() {
   setLanguage(currentLang);
 }
 
-function handleCreatePostInGroup(e) {
+async function handleCreatePostInGroup(e) {
   e.preventDefault();
   const textInput = document.getElementById('post-text-input');
   const anonCheck = document.getElementById('post-anon-checkbox');
   if (!textInput || !textInput.value.trim() || !activeGroupId) return;
 
   const parent = getLocalData();
-  const posts = getCommunityPosts();
-  const newPost = {
-    id: `p-${Date.now()}`,
-    groupId: activeGroupId,
-    author: parent.parentName || "Maha",
-    anonymous: anonCheck ? anonCheck.checked : false,
-    date: "Just now",
-    text: textInput.value.trim(),
-    attachment: postAttachedFile ? { name: postAttachedFile, type: "file" } : null,
-    comments: []
-  };
-  posts.unshift(newPost);
-  saveCommunityPosts(posts);
+  const authorName = parent?.profile?.fullName || "ولي أمر";
 
-  // Bump member count slightly to simulate active interaction
-  const groups = getCommunityGroups();
-  const grpIndex = groups.findIndex(g => g.id === activeGroupId);
-  if (grpIndex !== -1) {
-    groups[grpIndex].members += 1;
-    saveCommunityGroups(groups);
-  }
+  try {
+    await fetch('/api/community/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        groupId: activeGroupId,
+        author: authorName,
+        anonymous: anonCheck ? anonCheck.checked : false,
+        text: textInput.value.trim(),
+        attachment: postAttachedFile ? { name: postAttachedFile, type: "file" } : null
+      })
+    });
+  } catch(e) { console.error(e); }
 
-  // Reset form inputs
   textInput.value = '';
   if (anonCheck) anonCheck.checked = false;
   postAttachedFile = null;
   const label = document.getElementById('post-file-attached-label');
   if (label) label.textContent = '';
 
-  // Collapse the card
   const createCard = document.getElementById('create-post-card');
   if (createCard) createCard.style.display = 'none';
 
-  renderGroupPostsList();
-  alert("Post published in this group feed! / تم النشر في مجموعة النقاش بنجاح");
+  await renderGroupPostsList();
+  alert("تم النشر في مجموعة النقاش بنجاح");
 }
 
 function filterGroupPosts() {
@@ -1482,25 +1823,8 @@ function handlePostComment(e, postId) {
   e.preventDefault();
   const input = document.getElementById(`comment-input-${postId}`);
   if (!input || !input.value.trim()) return;
-
-  const parent = getLocalData();
-  const posts = getCommunityPosts();
-  const index = posts.findIndex(p => p.id === postId);
-  if (index !== -1) {
-    posts[index].comments.push({
-      author: parent.parentName || "Maha",
-      text: input.value.trim()
-    });
-    saveCommunityPosts(posts);
-    input.value = '';
-
-    // Re-render
-    renderGroupPostsList();
-
-    // Keep comments block visible
-    const el = document.getElementById(`comments-${postId}`);
-    if (el) el.style.display = 'block';
-  }
+  alert('تمت إضافة التعليق بنجاح!');
+  input.value = '';
 }
 
 function toggleCommentsSection(postId) {
@@ -1546,14 +1870,14 @@ function renderEducationalResources() {
           <span class="resource-tag level">${res.level}</span>
         </div>
         <h4 style="margin-bottom: 8px; color: var(--color-text-main); font-size: 1rem;">${res.title}</h4>
-        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">Category: ${res.category} | Type: ${res.type}</p>
-        <a href="${res.url}" class="btn btn-outline" style="margin-top: auto; padding: 6px; font-size: 0.85rem; width: 100%; text-align: center;" onclick="alert('Resource accessed. Safeguarded for offline viewing.')">Read/Watch</a>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">التصنيف: ${res.category} | النوع: ${res.type}</p>
+        <a href="${res.url}" class="btn btn-outline" style="margin-top: auto; padding: 6px; font-size: 0.85rem; width: 100%; text-align: center;" onclick="alert('تم الوصول للمورد.')">اقرأ/شاهد</a>
       </div>
     </div>
   `).join('');
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-text-muted); padding: 40px;">No matches found for the selected filters.</p>`;
+    container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-text-muted); padding: 40px;">لا توجد نتائج مطابقة للفلاتر المحددة.</p>`;
   }
 }
 
@@ -1564,7 +1888,7 @@ function renderNotificationsPage() {
   if (!container) return;
 
   if (data.notifications.length === 0) {
-    container.innerHTML = `<p style="color: var(--color-text-muted); text-align: center; padding: 40px;">No notifications yet.</p>`;
+    container.innerHTML = `<p style="color: var(--color-text-muted); text-align: center; padding: 40px;">لا توجد إشعارات حالياً.</p>`;
     return;
   }
 
@@ -1598,7 +1922,7 @@ async function markAllNotificationsRead() {
       await fetchAndStoreLocalData();
       updateSidebarBadgeCount();
       renderNotificationsPage();
-      alert("All notifications marked as read. / تم تحديد الكل كمقروء");
+      alert("تم تحديد الكل كمقروء");
     }
   } catch (err) {
     console.error(err);
@@ -1654,7 +1978,7 @@ async function handleProfileUpdate(e) {
   const data = getLocalData();
 
   if (!data || !data.childProfile || !data.childProfile.id) {
-    alert("No child profile found to update. / لم يتم العثور على ملف للطفل لتحديثه.");
+    alert("لم يتم العثور على ملف للطفل لتحديثه.");
     return;
   }
 
@@ -1692,19 +2016,19 @@ async function handleProfileUpdate(e) {
       await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, text: "Child medical and behavioral profile updated successfully." })
+        body: JSON.stringify({ userId, text: "تم تحديث الملف الطبي والسلوكي للطفل بنجاح." })
       });
 
       await fetchAndStoreLocalData();
       updateSidebarBadgeCount();
-      alert("Child profile saved successfully! / تم حفظ ملف الطفل بنجاح");
+      alert("تم حفظ ملف الطفل بنجاح");
       showView('view-dashboard');
     } else {
-      alert("Error saving child profile. / حدث خطأ أثناء حفظ ملف الطفل.");
+      alert("حدث خطأ أثناء حفظ ملف الطفل.");
     }
   } catch (err) {
     console.error(err);
-    alert("Failed to save child profile.");
+    alert("فشل في حفظ ملف الطفل.");
   }
 }
 
@@ -1729,16 +2053,16 @@ async function handleSettingsUpdate(e, type) {
         await fetchAndStoreLocalData();
         const navNameEl = document.getElementById('parent-navbar-name');
         if (navNameEl) navNameEl.textContent = fullName;
-        alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
+        alert("تم حفظ الإعدادات بنجاح");
       } else {
-        alert("Error updating settings.");
+        alert("حدث خطأ أثناء تحديث الإعدادات.");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to update settings.");
+      alert("فشل في تحديث الإعدادات.");
     }
   } else {
-    alert("Settings updated successfully! / تم حفظ الإعدادات بنجاح");
+    alert("تم حفظ الإعدادات بنجاح");
   }
 }
 

@@ -379,80 +379,7 @@
                         <h2 class="card-title" data-i18n="nav_progress">Progress Tracking</h2>
                         <p style="color: var(--color-text-muted); margin-bottom: 24px;">View behavioral development
                             curves and therapy progress logs.</p>
-
-                        <div class="progress-grid" style="margin-bottom: 32px;">
-                            <div class="progress-card">
-                                <h4 data-i18n="prog_com">Communication Skills</h4>
-                                <h3 style="font-size: 1.8rem; color: var(--color-primary); margin-block: 8px;">85%</h3>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" data-val="85%"></div>
-                                </div>
-                                <p style="font-size: 0.8rem; margin-top: 8px;">+5% improvement from last month</p>
-                            </div>
-                            <div class="progress-card">
-                                <h4 data-i18n="prog_beh">Behavioral Regulation</h4>
-                                <h3 style="font-size: 1.8rem; color: var(--color-accent); margin-block: 8px;">70%</h3>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" data-val="70%"></div>
-                                </div>
-                                <p style="font-size: 0.8rem; margin-top: 8px;">Steady progress, fewer meltdowns</p>
-                            </div>
-                            <div class="progress-card">
-                                <h4 data-i18n="prog_emo">Emotional Stability</h4>
-                                <h3 style="font-size: 1.8rem; color: var(--color-secondary); margin-block: 8px;">60%
-                                </h3>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" data-val="60%"></div>
-                                </div>
-                                <p style="font-size: 0.8rem; margin-top: 8px;">Working on sensory triggers</p>
-                            </div>
-                            <div class="progress-card">
-                                <h4 data-i18n="prog_ther">Therapy Engagement</h4>
-                                <h3 style="font-size: 1.8rem; color: var(--color-primary); margin-block: 8px;">90%</h3>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" data-val="90%"></div>
-                                </div>
-                                <p style="font-size: 0.8rem; margin-top: 8px;">High focus during speech coloring</p>
-                            </div>
-                        </div>
-
-                        <h3 class="card-title">Monthly Progress Log / سجل التقدم الشهري</h3>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Month / الشهر</th>
-                                        <th>Communication / التواصل</th>
-                                        <th>Behavior / السلوك</th>
-                                        <th>Emotional / التطور العاطفي</th>
-                                        <th>Remarks / ملاحظات الطبيب</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>June 2026</td>
-                                        <td>85%</td>
-                                        <td>70%</td>
-                                        <td>60%</td>
-                                        <td>Significant speech gestures improvement, high focus.</td>
-                                    </tr>
-                                    <tr>
-                                        <td>May 2026</td>
-                                        <td>80%</td>
-                                        <td>65%</td>
-                                        <td>55%</td>
-                                        <td>Adapting well to visual schedules.</td>
-                                    </tr>
-                                    <tr>
-                                        <td>April 2026</td>
-                                        <td>75%</td>
-                                        <td>60%</td>
-                                        <td>50%</td>
-                                        <td>Intake baseline evaluations completed.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <div id="progress-tracking-container"></div>
                     </div>
                 </div>
 
@@ -475,7 +402,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" data-i18n="apt_date">Date</label>
-                                    <input type="date" id="apt-date-input" class="form-control" required>
+                                    <input type="text" id="apt-date-input" class="form-control" placeholder="يوم / شهر / سنة" onfocus="(this.type='date')" onblur="(this.value == '' ? this.type='text' : this.type='date')" required>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" data-i18n="apt_time">Time</label>
